@@ -1,0 +1,1789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GLS — CP Industry Session</title>
+<style>
+:root {
+  --sp-3: 8px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 40px;
+  --font: Arial, Helvetica, sans-serif;
+  --ink: #08080F;
+  --paper: #FFFFFF;
+  --text-dark: #1A1A1A;
+  --text-body: #4A4A52;
+  --text-muted: #8A8A93;
+  --stroke: #E4E4EA;
+  --red: #E8283E; --orange: #FF8A3D; --pink: #EC4899; --violet: #9B5CF6; --blue: #4C6FFF; --gold: #F5B942;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; font-family: var(--font); color: var(--text-body); background: var(--ink); overflow: hidden; height: 100%; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+
+/* ===== Custom cursor (desktop, fine pointer only) ===== */
+.has-custom-cursor, .has-custom-cursor a, .has-custom-cursor button, .has-custom-cursor [role="button"] { cursor: none; }
+#cur-dot, #cur-ring { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 2000; border-radius: 50%; transform: translate(-50%,-50%); }
+#cur-dot { width: 6px; height: 6px; background: #fff; mix-blend-mode: difference; transition: transform 120ms ease; }
+#cur-ring { width: 32px; height: 32px; border: 1.5px solid rgba(255,255,255,0.6); mix-blend-mode: difference; transition: width 200ms, height 200ms, transform 160ms ease-out, border-color 200ms; }
+#cur-ring.grow { width: 60px; height: 60px; border-color: var(--pink); }
+
+/* ===== App shell: full-screen paginated ===== */
+#app { height: 100dvh; overflow-y: scroll; scroll-snap-type: y mandatory; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+.screen { height: 100dvh; scroll-snap-align: start; scroll-snap-stop: always; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.screen-inner { width: 100%; max-width: 900px; max-height: calc(100dvh - 120px); overflow-y: auto; padding: 0 var(--sp-6); text-align: center; scrollbar-width: thin; position: relative; z-index: 2; }
+@media (max-width: 640px) { .screen-inner { padding: 0 var(--sp-5); } }
+
+/* Grain texture on dark screens for a cinematic feel */
+.grain::after {
+  content: ""; position: absolute; inset: -20%; z-index: 1; pointer-events: none; opacity: 0.05; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+h1, h2, h3 { margin: 0; }
+h1 { font-weight: 800; font-size: 64px; line-height: 66px; letter-spacing: -1.5px; color: #fff; margin-bottom: var(--sp-4); }
+h2 { font-weight: 800; font-size: 32px; line-height: 38px; letter-spacing: -0.5px; margin-bottom: var(--sp-4); }
+h3 { font-weight: 700; font-size: 18px; line-height: 24px; }
+@media (max-width: 640px) { h1 { font-size: 38px; line-height: 40px; } h2 { font-size: 26px; line-height: 32px; } }
+p { margin: 0 0 var(--sp-4); line-height: 1.6; }
+.lede { font-size: 19px; line-height: 1.6; }
+.muted { color: var(--text-muted); }
+.on-ink { color: rgba(255,255,255,0.82); }
+.on-ink h2 { color: #fff; }
+.on-paper { color: var(--text-body); }
+.on-paper h2 { color: var(--text-dark); }
+.screen.on-paper { background: var(--paper); }
+.screen.on-ink { background: var(--ink); }
+
+.grad-text { background: linear-gradient(100deg, var(--red), var(--orange) 35%, var(--pink) 65%, var(--violet)); -webkit-background-clip: text; background-clip: text; color: transparent; background-size: 200% auto; animation: sweep 6s ease-in-out infinite; }
+@keyframes sweep { 0%,100% { background-position: 0% center; } 50% { background-position: 100% center; } }
+
+.word { display: inline-block; overflow: hidden; vertical-align: top; }
+.word > span { display: inline-block; }
+.js-ready .word > span { transform: translateY(115%); opacity: 0; }
+.js-ready .screen.active .word > span { animation: riseIn 0.8s cubic-bezier(.2,.8,.2,1) forwards; }
+@keyframes riseIn { to { transform: translateY(0); opacity: 1; } }
+
+.js-ready .fade-up { opacity: 0; transform: translateY(18px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.js-ready .screen.active .fade-up { opacity: 1; transform: translateY(0); }
+/* Choreographed stagger for lists — each direct child gets an increasing delay via --i */
+.js-ready .stagger > * { opacity: 0; transform: translateY(16px); transition: opacity 0.55s ease, transform 0.55s ease; }
+.js-ready .screen.active .stagger > * { opacity: 1; transform: translateY(0); }
+.stagger > *:nth-child(1) { transition-delay: 0.05s; } .stagger > *:nth-child(2) { transition-delay: 0.14s; }
+.stagger > *:nth-child(3) { transition-delay: 0.23s; } .stagger > *:nth-child(4) { transition-delay: 0.32s; }
+.stagger > *:nth-child(5) { transition-delay: 0.41s; }
+
+/* ===== Aurora ===== */
+.aurora { position: absolute; inset: -10%; z-index: 0; filter: blur(70px); opacity: 0.7; }
+.aurora span { position: absolute; border-radius: 50%; mix-blend-mode: screen; }
+.a1 { width: 46vw; height: 46vw; top: -10%; left: -8%; background: radial-gradient(circle, var(--red), transparent 70%); animation: drift1 22s ease-in-out infinite; }
+.a2 { width: 40vw; height: 40vw; top: 10%; right: -10%; background: radial-gradient(circle, var(--violet), transparent 70%); animation: drift2 26s ease-in-out infinite; }
+.a3 { width: 38vw; height: 38vw; bottom: -15%; left: 15%; background: radial-gradient(circle, var(--blue), transparent 70%); animation: drift3 30s ease-in-out infinite; }
+@keyframes drift1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(6%, 8%) scale(1.15); } }
+@keyframes drift2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-8%, 6%) scale(1.1); } }
+@keyframes drift3 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(5%, -8%) scale(1.2); } }
+/* Faint color bleed for the white screens, so the whole app feels like one world */
+.wash { position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: 0.7; }
+.wash span { position: absolute; border-radius: 50%; filter: blur(90px); }
+.wash .w1 { width: 34vw; height: 34vw; top: -10%; right: -8%; background: radial-gradient(circle, rgba(232,40,62,0.16), transparent 70%); animation: washDrift1 16s ease-in-out infinite; }
+.wash .w2 { width: 30vw; height: 30vw; bottom: -12%; left: -6%; background: radial-gradient(circle, rgba(155,92,246,0.14), transparent 70%); animation: washDrift2 20s ease-in-out infinite; }
+.wash .w3 { width: 22vw; height: 22vw; top: 30%; left: 40%; background: radial-gradient(circle, rgba(236,73,153,0.1), transparent 70%); animation: washDrift1 22s ease-in-out infinite reverse; }
+@keyframes washDrift1 { 0%, 100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-4%, 6%) scale(1.1); } }
+@keyframes washDrift2 { 0%, 100% { transform: translate(0,0) scale(1); } 50% { transform: translate(5%, -5%) scale(1.12); } }
+
+/* ===== Fixed chrome ===== */
+.chrome-brand { position: fixed; top: 24px; left: 28px; z-index: 50; font-weight: 800; font-size: 17px; text-decoration: none;
+  background: linear-gradient(100deg, var(--red), var(--violet)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.dots { position: fixed; right: 24px; top: 50%; transform: translateY(-50%); z-index: 50; display: flex; flex-direction: column; gap: 14px; }
+.dots button { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.5); background: transparent; cursor: pointer; padding: 0; transition: background 200ms, border-color 200ms, transform 200ms, box-shadow 200ms; }
+.dots button.active { background: var(--pink); border-color: var(--pink); transform: scale(1.3); box-shadow: 0 0 10px var(--pink); }
+.dots--dark button { border-color: rgba(0,0,0,0.25); }
+.dots--dark button.active { background: var(--red); border-color: var(--red); box-shadow: 0 0 10px rgba(232,40,62,0.5); }
+@media (max-width: 640px) { .dots { right: 14px; } }
+
+.next-cue { position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 5; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: none; color: inherit; opacity: 0.6; transition: opacity 200ms; }
+.next-cue:hover { opacity: 1; }
+.next-cue svg { animation: bounce 1.8s ease-in-out infinite; }
+@keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+.next-cue span { font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; }
+.next-cue-prompt { font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0; color: rgba(255,255,255,0.8);
+  margin-bottom: 2px; max-width: 220px; text-align: center; line-height: 1.4; }
+
+/* ===== Hero ===== */
+.media {
+  max-width: 640px; margin: 0 auto; aspect-ratio: 16/9; background: #000; border-radius: 14px; overflow: hidden;
+  position: relative; cursor: pointer; box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+}
+.media::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px; z-index: 3;
+  background: linear-gradient(90deg, var(--red), var(--pink), var(--violet), var(--gold));
+}
+.media video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.media .play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.15); transition: background 150ms; }
+.media:hover .play { background: rgba(0,0,0,0.28); }
+.media.unmuted .play { display: none; }
+.play-circle { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(100deg, var(--red), var(--pink)); box-shadow: 0 8px 30px rgba(236,73,153,0.5); }
+.play-circle svg { margin-left: 2px; }
+.media .mute-hint { position: absolute; bottom: 12px; left: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+  color: rgba(255,255,255,0.85); background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); padding: 5px 10px; border-radius: 20px; }
+
+/* Hero meta tag + divider rule */
+.hero-meta { font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.55);
+  display: inline-flex; align-items: center; gap: 8px; margin-bottom: var(--sp-5); }
+.hero-meta::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--red); box-shadow: 0 0 8px var(--red); flex-shrink: 0; }
+.hero-countdown { font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.85); display: inline-flex; align-items: center; gap: 8px; margin-bottom: var(--sp-4); }
+.hero-countdown #countdownDays { font-family: var(--font); font-weight: 800; font-size: 17px;
+  background: linear-gradient(100deg, var(--red), var(--orange), var(--pink)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.cd-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 10px var(--pink); animation: pulse 1.6s infinite; }
+.hero-rule { width: 64px; height: 3px; margin: 0 auto var(--sp-6); border-radius: 2px;
+  background: linear-gradient(90deg, var(--red), var(--pink), var(--violet), var(--gold)); }
+
+/* ===== Agenda screen ===== */
+.agenda-when { font-size: 15px; margin-bottom: var(--sp-6); }
+.mini-timeline { display: flex; flex-direction: column; gap: var(--sp-3); text-align: left; max-width: 560px; margin: 0 auto; }
+.mt-row { display: grid; grid-template-columns: 118px 1fr; gap: var(--sp-4); align-items: baseline; padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.12); }
+.mt-row:first-child { border-top: none; }
+.mt-time { font-size: 13px; font-weight: 700; }
+.mt-row[data-color="red"] .mt-time { color: var(--red); }
+.mt-row[data-color="pink"] .mt-time { color: var(--pink); }
+.mt-row[data-color="violet"] .mt-time { color: var(--violet); }
+.mt-row[data-color="gold"] .mt-time { color: var(--gold); }
+.mt-row.is-break .mt-time { color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; font-size: 11px; }
+.mt-title { font-weight: 700; color: #fff; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.mt-title svg { flex-shrink: 0; }
+.mt-desc { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+/* ===== Agenda screen: photo cards ===== */
+.agenda-cards { display: flex; gap: 10px; align-items: stretch; margin-top: 48px; height: min(52vh, 380px); }
+.agenda-card {
+  flex: 1; min-width: 0; position: relative; border-radius: 6px; overflow: hidden; background-size: cover; background-position: center;
+  display: flex; flex-direction: column; justify-content: flex-end; padding: var(--sp-4) var(--sp-3) 52px; text-align: left;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.35); transition: transform 220ms ease, box-shadow 220ms ease;
+}
+.agenda-card[data-color="red"] { background: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1.5px) 0 0/22px 22px, linear-gradient(155deg, #3a0a10, #14060a 80%); }
+.agenda-card[data-color="pink"] { background: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1.5px) 0 0/22px 22px, linear-gradient(155deg, #380b28, #14060a 80%); }
+.agenda-card[data-color="violet"] { background: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1.5px) 0 0/22px 22px, linear-gradient(155deg, #241340, #0e0a18 80%); }
+.agenda-card[data-color="gold"] { background: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1.5px) 0 0/22px 22px, linear-gradient(155deg, #3a2408, #17110a 80%); }
+
+/* Slow diagonal light sweep — keeps each card feeling alive without a photo */
+.agenda-card::after {
+  content: ""; position: absolute; top: -50%; left: -60%; width: 40%; height: 200%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,0.12), transparent);
+  transform: rotate(12deg); animation: sweep 6s ease-in-out infinite; pointer-events: none;
+}
+.agenda-card[data-color="pink"]::after { animation-delay: 1.2s; }
+.agenda-card[data-color="violet"]::after { animation-delay: 2.4s; }
+.agenda-card[data-color="gold"]::after { animation-delay: 3.6s; }
+@keyframes sweep { 0% { left: -60%; } 45%, 100% { left: 130%; } }
+
+/* Soft colored glow behind the icon, filling the card's empty middle */
+.agenda-card::before {
+  content: ""; position: absolute; top: 40%; left: 50%; width: 170px; height: 170px; transform: translate(-50%, -50%);
+  border-radius: 50%; filter: blur(38px); opacity: 0.4; pointer-events: none; z-index: 0;
+  animation: glowPulse 4.5s ease-in-out infinite;
+}
+.agenda-card[data-color="red"]::before { background: radial-gradient(circle, var(--red), transparent 70%); }
+.agenda-card[data-color="pink"]::before { background: radial-gradient(circle, var(--pink), transparent 70%); }
+.agenda-card[data-color="violet"]::before { background: radial-gradient(circle, var(--violet), transparent 70%); }
+.agenda-card[data-color="gold"]::before { background: radial-gradient(circle, var(--gold), transparent 70%); }
+@keyframes glowPulse { 0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); } 50% { opacity: 0.55; transform: translate(-50%, -50%) scale(1.15); } }
+
+.ac-icon { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); opacity: 0.9; color: rgba(255,255,255,0.9);
+  animation: iconFloat 4.5s ease-in-out infinite; z-index: 1; }
+.ac-icon svg { display: block; width: 84px; height: 84px; }
+@keyframes iconFloat { 0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); } 50% { transform: translate(-50%, -50%) scale(1.08) rotate(3deg); } }
+@media (max-width: 640px) { .ac-icon svg { width: 56px; height: 56px; } .agenda-card::before { width: 120px; height: 120px; } }
+
+.agenda-card:hover { transform: translateY(-6px); }
+.agenda-card[data-color="red"]:hover { box-shadow: 0 20px 40px rgba(0,0,0,0.35), 0 0 30px rgba(232,40,62,0.35); }
+.agenda-card[data-color="pink"]:hover { box-shadow: 0 20px 40px rgba(0,0,0,0.35), 0 0 30px rgba(236,73,153,0.35); }
+.agenda-card[data-color="violet"]:hover { box-shadow: 0 20px 40px rgba(0,0,0,0.35), 0 0 30px rgba(155,92,246,0.35); }
+.agenda-card[data-color="gold"]:hover { box-shadow: 0 20px 40px rgba(0,0,0,0.35), 0 0 30px rgba(245,185,66,0.35); }
+
+.agenda-card .ac-time { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; color: rgba(255,255,255,0.85); margin-bottom: 6px; }
+.agenda-card h3 { color: #fff; font-size: 15px; line-height: 19px; margin-bottom: 6px; }
+.agenda-card p { font-size: 12px; line-height: 16px; color: rgba(255,255,255,0.75); margin: 0; }
+.agenda-card p strong { color: #fff; }
+.num-badge {
+  position: absolute; left: 12px; bottom: 12px; width: 30px; height: 30px; border-radius: 4px; z-index: 3;
+  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: #fff;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.4);
+}
+.agenda-card[data-color="red"] .num-badge { background: var(--red); }
+.agenda-card[data-color="pink"] .num-badge { background: var(--pink); }
+.agenda-card[data-color="violet"] .num-badge { background: var(--violet); }
+.agenda-card[data-color="gold"] .num-badge { background: var(--gold); color: #3a2b00; }
+.agenda-card-break { flex: 0 0 40px; display: flex; align-items: center; justify-content: center; position: relative; }
+.agenda-card-break::before { content: ""; position: absolute; top: 8px; bottom: 8px; left: 50%; width: 2px; transform: translateX(-50%);
+  background: linear-gradient(180deg, transparent, var(--pink), var(--violet), transparent); opacity: 0.5; }
+.agenda-card-break .lbl { writing-mode: vertical-rl; text-transform: uppercase; letter-spacing: 2.5px; font-size: 11px; font-weight: 800;
+  color: rgba(255,255,255,0.75); white-space: nowrap; text-shadow: 0 0 12px rgba(0,0,0,0.6); position: relative; z-index: 1; }
+@media (max-width: 720px) {
+  .agenda-cards { flex-direction: column; height: auto; gap: var(--sp-6); }
+  .agenda-card { height: 180px; }
+  .agenda-card-break { flex-basis: auto; padding: 4px 0; }
+  .agenda-card-break .lbl { writing-mode: horizontal-tb; }
+}
+.ribbon-wrap { margin-top: 4px; opacity: 0.9; }
+.ribbon-note { font-size: 14px; color: rgba(255,255,255,0.55); margin-top: var(--sp-4); }
+.ribbon-note .plus { color: var(--red); font-weight: 800; margin-right: 4px; }
+
+/* ===== Reading screen ===== */
+.reading-progress { display: flex; flex-direction: column; align-items: center; margin: 0 auto var(--sp-7); }
+.progress-ring { width: 100px; height: 100px; border-radius: 50%; margin-bottom: var(--sp-3);
+  background: conic-gradient(var(--pink) calc(var(--pct, 0) * 1%), var(--stroke) 0);
+  display: flex; align-items: center; justify-content: center; transition: background 600ms ease; }
+.progress-ring-inner { width: 80px; height: 80px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 1px var(--stroke);
+  display: flex; align-items: center; justify-content: center; }
+.progress-ring-inner span { font-weight: 800; font-size: 22px; background: linear-gradient(100deg, var(--red), var(--pink), var(--violet));
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.rp-label { font-size: 14px; font-weight: 700; color: var(--text-dark); }
+.rp-label #readingProgressCount { color: var(--pink); }
+
+.read-accordion { max-width: 620px; margin: 0 auto; text-align: left; }
+.read-card { border: 1px solid var(--stroke); border-radius: 10px; margin-bottom: var(--sp-3); overflow: hidden; background: #fff;
+  position: relative; box-shadow: 0 4px 16px rgba(0,0,0,0.05); transition: box-shadow 200ms ease, transform 200ms ease; }
+.read-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.read-card[data-color="red"] { background: linear-gradient(180deg, rgba(232,40,62,0.05), #fff 70px); }
+.read-card[data-color="pink"] { background: linear-gradient(180deg, rgba(236,73,153,0.05), #fff 70px); }
+.read-card[data-color="violet"] { background: linear-gradient(180deg, rgba(155,92,246,0.05), #fff 70px); }
+.read-card[data-color="red"]::before { background: linear-gradient(90deg, var(--red), var(--orange)); }
+.read-card[data-color="pink"]::before { background: linear-gradient(90deg, var(--pink), var(--violet)); }
+.read-card[data-color="violet"]::before { background: linear-gradient(90deg, var(--violet), var(--blue)); }
+.read-card:hover { transform: translateY(-2px); }
+.read-card[data-color="red"]:hover { box-shadow: 0 14px 30px rgba(232,40,62,0.14); }
+.read-card[data-color="pink"]:hover { box-shadow: 0 14px 30px rgba(236,73,153,0.14); }
+.read-card[data-color="violet"]:hover { box-shadow: 0 14px 30px rgba(155,92,246,0.14); }
+.read-card-head { width: 100%; display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-4) var(--sp-5);
+  background: none; border: none; cursor: pointer; text-align: left; font-family: var(--font); }
+.read-card .icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  animation: iconBreathe 3.4s ease-in-out infinite; box-shadow: 0 6px 14px rgba(0,0,0,0.12); }
+.read-card[data-color="red"] .icon { background: linear-gradient(135deg, var(--red), var(--orange)); color: #fff; }
+.read-card[data-color="pink"] .icon { background: linear-gradient(135deg, var(--pink), var(--violet)); color: #fff; }
+.read-card[data-color="violet"] .icon { background: linear-gradient(135deg, var(--violet), var(--blue)); color: #fff; }
+.head-text { flex: 1; min-width: 0; }
+.head-text h3 { margin: 0 0 2px; font-size: 17px; }
+.head-text .sub { font-size: 13px; color: var(--text-muted); }
+.progress-chip { font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 20px; background: var(--gray-x-light, #F2F2F4); color: var(--text-dark);
+  flex-shrink: 0; white-space: nowrap; }
+.progress-chip.chip-done { background: var(--success-light, #DAF2ED); color: var(--success, #07C29F); }
+.progress-chip.pending-chip { background: var(--warning-light, #FEF7E8); color: #B8860B; font-weight: 700; }
+.read-card-head .chev { flex-shrink: 0; color: var(--text-muted); transition: transform 250ms ease; }
+.read-card.open .chev { transform: rotate(180deg); }
+.read-card-body { max-height: 0; overflow: hidden; transition: max-height 400ms ease; }
+.read-card.open .read-card-body { max-height: 320px; }
+.read-card-body-inner { padding: 0 var(--sp-5) var(--sp-5) 68px; }
+
+.check-item { display: flex; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-3) 0; cursor: pointer; }
+.check-item input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.check-box { width: 20px; height: 20px; border-radius: 5px; border: 2px solid var(--stroke); flex-shrink: 0; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center; transition: background 150ms, border-color 150ms; }
+.check-box::after { content: ""; width: 10px; height: 6px; border-left: 2px solid #fff; border-bottom: 2px solid #fff;
+  transform: rotate(-45deg) translateY(-1px); opacity: 0; }
+.check-item input:checked + .check-box { background: var(--success, #07C29F); border-color: var(--success, #07C29F); }
+.check-item input:checked + .check-box::after { opacity: 1; }
+.check-item input:checked ~ .check-label { color: var(--text-muted); text-decoration: line-through; text-decoration-color: var(--stroke); }
+.check-label { font-size: 15px; line-height: 22px; }
+.check-label a { color: var(--text-dark); font-weight: 700; text-decoration: underline; text-decoration-color: var(--stroke); }
+.check-item input:checked ~ .check-label a { color: inherit; }
+.check-label .src { font-size: 13px; color: var(--text-muted); font-weight: 400; }
+
+.read-item { font-size: 14px; padding: 6px 0; }
+.read-item.pending { color: var(--text-muted); font-style: italic; }
+
+.your-notes { max-width: 620px; margin: 48px auto 0; text-align: left; padding-top: var(--sp-6); border-top: 1px solid var(--stroke); }
+.your-notes h3 { margin-bottom: 4px; }
+.your-notes .small { font-size: 13px; margin-bottom: var(--sp-4); }
+.your-notes textarea { width: 100%; font-family: var(--font); font-size: 15px; line-height: 1.6; color: var(--text-dark);
+  background: #fff; border: 1px solid var(--stroke); border-radius: 10px; padding: var(--sp-4); resize: vertical; transition: border-color 150ms; }
+.your-notes textarea:focus { border-color: var(--pink); outline: none; }
+.notes-status { font-size: 12px; color: var(--text-muted); margin-top: 4px; height: 16px; opacity: 0; transition: opacity 300ms; }
+.notes-status.show { opacity: 1; }
+
+/* ===== Live screen ===== */
+.live-status { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: rgba(255,255,255,0.55); margin-bottom: var(--sp-4); }
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pink); animation: pulse 1.6s infinite; box-shadow: 0 0 12px var(--pink); }
+.live-dot.small { width: 6px; height: 6px; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* The case-study question gets real presence — a lit, bordered spotlight */
+.case-study-card { margin: var(--sp-6) 0; padding: var(--sp-6) var(--sp-6); border-radius: 14px; text-align: left;
+  background: linear-gradient(160deg, rgba(232,40,62,0.12), rgba(155,92,246,0.08));
+  border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 0 0 1px rgba(255,255,255,0.03) inset, 0 20px 50px rgba(0,0,0,0.3); position: relative; overflow: hidden; }
+.case-study-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--red), var(--pink), var(--violet)); }
+.cs-label { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--pink); background: rgba(236,73,153,0.15); padding: 4px 10px; border-radius: 20px; margin-bottom: var(--sp-4); }
+.cs-question { font-size: 20px; font-weight: 700; line-height: 1.4; color: #fff; margin: 0; max-width: none; }
+
+/* Answer card: name + textarea + photo, grouped as one clear unit */
+.answer-card { text-align: left; padding: var(--sp-5); border-radius: 14px; background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1); margin-bottom: var(--sp-6); }
+.answer-card-title { font-size: 15px; font-weight: 800; color: rgba(255,255,255,0.85); margin-bottom: var(--sp-4); text-transform: uppercase; letter-spacing: 0.5px; }
+.name-input { width: 100%; font-family: var(--font); font-size: 14px; font-weight: 700; color: #fff; background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 10px 14px; margin-bottom: var(--sp-3); transition: border-color 150ms; }
+.name-input:focus { outline: none; border-color: var(--pink); }
+.name-input::placeholder { color: rgba(255,255,255,0.4); font-weight: 400; }
+.compose-row { display: flex; gap: var(--sp-3); align-items: flex-end; }
+textarea { font-family: var(--font); font-size: 15px; line-height: 22px; color: #fff; background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: var(--sp-3) var(--sp-4); width: 100%; resize: none; }
+textarea::placeholder { color: rgba(255,255,255,0.4); }
+.ds-btn { font-family: var(--font); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  padding: 14px 22px; border: none; border-radius: 8px; cursor: pointer; min-height: 48px; position: relative;
+  color: #fff; background: linear-gradient(100deg, var(--red), var(--pink)); box-shadow: 0 8px 24px rgba(232,40,62,0.35);
+  transition: transform 200ms; }
+.magnetic { will-change: transform; }
+.file-label { display: inline-flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.55); font-size: 12px; cursor: pointer;
+  text-decoration: underline; text-decoration-color: rgba(255,255,255,0.25); margin-top: var(--sp-3); }
+.photo-preview { max-width: 180px; max-height: 130px; border-radius: 8px; margin: var(--sp-3) 0 0; display: none; }
+.photo-preview.show { display: block; }
+
+/* Tab switcher between Discuss and Live from the room */
+.live-tabs { display: flex; gap: var(--sp-3); justify-content: center; margin-bottom: var(--sp-6); }
+.live-tab { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.6);
+  font-family: var(--font); font-size: 13px; font-weight: 700; padding: 10px 20px; border-radius: 24px; cursor: pointer; transition: all 200ms; }
+.live-tab:hover { border-color: rgba(255,255,255,0.35); color: #fff; }
+.live-tab.active { background: linear-gradient(100deg, var(--red), var(--pink)); border-color: transparent; color: #fff;
+  box-shadow: 0 8px 20px rgba(232,40,62,0.3); }
+
+/* Live feed, as a colorful wall of thoughts */
+.feed-header { display: flex; align-items: center; gap: 10px; margin-bottom: var(--sp-5); text-align: left; }
+.feed-preview-btn { margin-left: auto; background: none; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.55);
+  font-family: var(--font); font-size: 11px; padding: 5px 10px; border-radius: 20px; cursor: pointer; transition: all 150ms; }
+.feed-preview-btn:hover { border-color: var(--pink); color: #fff; }
+.feed-preview-btn.active { background: var(--pink); border-color: var(--pink); color: #fff; }
+.feed-header h3 { font-size: 15px; font-weight: 800; color: rgba(255,255,255,0.85); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.responses-wall { text-align: left; max-height: 60vh; overflow-y: auto; column-width: 240px; column-gap: 18px; padding: 16px 6px 6px; }
+.response { break-inside: avoid; margin-bottom: 18px; padding: 18px 16px 16px; border-radius: 4px 4px 14px 14px; position: relative;
+  display: flex; gap: 12px; align-items: flex-start;
+  box-shadow: 0 14px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  animation: wallIn 400ms ease both; }
+.response[data-accent="red"] { background: linear-gradient(160deg, rgba(232,40,62,0.28), rgba(232,40,62,0.06) 60%), #1a1520; }
+.response[data-accent="pink"] { background: linear-gradient(160deg, rgba(236,73,153,0.28), rgba(236,73,153,0.06) 60%), #1a1520; }
+.response[data-accent="violet"] { background: linear-gradient(160deg, rgba(155,92,246,0.28), rgba(155,92,246,0.06) 60%), #1a1520; }
+.response[data-accent="gold"] { background: linear-gradient(160deg, rgba(245,185,66,0.28), rgba(245,185,66,0.06) 60%), #1a1520; }
+.response::before { content: ""; position: absolute; top: -6px; left: 50%; transform: translateX(-50%); width: 12px; height: 12px;
+  border-radius: 50%; box-shadow: 0 3px 6px rgba(0,0,0,0.5); z-index: 1; }
+.response[data-accent="red"]::before { background: var(--red); }
+.response[data-accent="pink"]::before { background: var(--pink); }
+.response[data-accent="violet"]::before { background: var(--violet); }
+.response[data-accent="gold"]::before { background: var(--gold); }
+.response:hover { transform: rotate(0deg) scale(1.05); box-shadow: 0 22px 44px rgba(0,0,0,0.5); z-index: 2; }
+@keyframes wallIn { from { opacity: 0; transform: rotate(var(--tilt, 0deg)) translateY(14px) scale(0.94); } to { opacity: 1; transform: rotate(var(--tilt, 0deg)) translateY(0) scale(1); } }
+.response-avatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 13px; font-weight: 800; box-shadow: 0 4px 10px rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.15); }
+.response-body { flex: 1; min-width: 0; }
+.response .who { display: flex; align-items: baseline; gap: 8px; margin-bottom: 5px; flex-wrap: wrap; }
+.response .who-name { font-weight: 800; font-size: 13px; color: #fff !important; }
+.response .who-time { font-size: 11px; color: rgba(255,255,255,0.5); }
+.response p { color: rgba(255,255,255,0.95); margin: 0; font-size: 15px; line-height: 1.5; font-weight: 500; }
+.response img { max-width: 100%; border-radius: 8px; display: block; margin-top: 8px; }
+.empty { color: rgba(255,255,255,0.35); font-size: 14px; font-style: italic; }
+@media (max-width: 640px) { .responses-wall { column-width: 100%; } }
+
+/* ===== Archive / other resources screen ===== */
+.coming-soon-card { max-width: 480px; margin: 0 auto var(--sp-6); padding: var(--sp-7) var(--sp-6);
+  border: 1.5px dashed var(--stroke); border-radius: 16px; background: linear-gradient(180deg, rgba(155,92,246,0.03), #fff 60%); }
+.cs-icon { width: 64px; height: 64px; border-radius: 50%; margin: 0 auto var(--sp-4); display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--pink), var(--violet)); box-shadow: 0 10px 26px rgba(155,92,246,0.35);
+  animation: csIconFloat 4.5s ease-in-out infinite; }
+@keyframes csIconFloat { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.08) rotate(3deg); } }
+.coming-soon-card h3 { margin-bottom: 6px; }
+.coming-soon-card .small { max-width: 340px; margin: 0 auto var(--sp-5); }
+.cs-tiles { display: flex; gap: var(--sp-3); justify-content: center; flex-wrap: wrap; }
+.cs-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100px; padding: var(--sp-3) var(--sp-2);
+  border: 1px dashed var(--stroke); border-radius: 10px; font-size: 12px; font-weight: 600; color: var(--text-muted); background: #fff; }
+.cs-tile[data-color="red"] { color: var(--red); }
+.cs-tile[data-color="pink"] { color: var(--pink); }
+.cs-tile[data-color="violet"] { color: var(--violet); }
+.cs-tile span { color: var(--text-muted); font-weight: 600; line-height: 1.3; text-align: center; }
+
+.archive-toggle { background: none; border: 1px solid var(--stroke); color: var(--text-dark); font-family: var(--font);
+  font-size: 14px; padding: 10px 20px; border-radius: 20px; cursor: pointer; margin-bottom: var(--sp-6); transition: background 150ms, border-color 150ms; }
+.archive-toggle:hover { background: var(--gray-x-light, #F7F5F3); border-color: var(--pink); }
+.archive-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--sp-4); max-width: 680px; margin: 0 auto var(--sp-6); text-align: left; }
+.archive-item { border: 1px solid var(--stroke); border-radius: 8px; padding: var(--sp-4); }
+.archive-item img { width: 100%; border-radius: 6px; margin-bottom: 8px; }
+.archive-item p { font-size: 14px; margin: 0; }
+
+/* ===== Other Resources: section layout ===== */
+.or-section { text-align: left; margin-bottom: var(--sp-8, 56px); }
+.or-section-label { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--pink); margin-bottom: var(--sp-5); }
+.or-section-label::before { content: ""; width: 16px; height: 2px; background: var(--pink); border-radius: 2px; }
+.or-empty { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3);
+  border: 1.5px dashed var(--stroke); border-radius: 14px; padding: var(--sp-7) var(--sp-6); text-align: center;
+  color: var(--text-muted); font-size: 14px; }
+.or-empty svg { color: var(--text-muted); opacity: 0.6; }
+
+/* Shared card chrome: colored top accent + tinted wash + icon badge, matching the app's language elsewhere */
+.or-card { position: relative; border: 1px solid var(--stroke); border-radius: 14px; padding: var(--sp-5); margin-bottom: var(--sp-4);
+  overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.04); }
+.or-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.or-card-head { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.or-card-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; box-shadow: 0 6px 14px rgba(0,0,0,0.15); }
+.or-card-head h3 { margin: 0; flex: 1; font-size: 16px; }
+
+.recap-card { background: linear-gradient(180deg, rgba(155,92,246,0.05), #fff 90px); }
+.recap-card::before { background: linear-gradient(90deg, var(--violet), var(--blue)); }
+.recap-card .or-card-icon { background: linear-gradient(135deg, var(--violet), var(--blue)); }
+.recap-card-head { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.recap-btn { background: linear-gradient(100deg, var(--violet), var(--blue)); color: #fff; border: none; border-radius: 20px;
+  font-family: var(--font); font-size: 12px; font-weight: 700; padding: 8px 16px; cursor: pointer; transition: transform 150ms; flex-shrink: 0; }
+.recap-btn:hover { transform: scale(1.03); }
+.recap-btn:disabled { opacity: 0.6; cursor: default; transform: none; }
+.recap-output p { font-size: 14px; line-height: 1.6; color: var(--text-body); }
+.recap-output ul, .recap-output ol { padding-left: 20px; margin: 8px 0; font-size: 14px; line-height: 1.6; color: var(--text-body); }
+.recap-output li { margin-bottom: 6px; }
+.recap-output strong { color: var(--text-dark); }
+
+.closing-card { background: linear-gradient(180deg, rgba(236,73,153,0.05), #fff 90px); }
+.closing-card::before { background: linear-gradient(90deg, var(--pink), var(--red)); }
+.closing-card .or-card-icon { background: linear-gradient(135deg, var(--pink), var(--red)); }
+.closing-card .name-input { color: var(--text-dark); background: var(--gray-x-light, #F7F5F3); border: 1px solid var(--stroke); font-weight: 700; }
+.closing-card .name-input::placeholder { color: var(--text-muted); font-weight: 400; }
+.closing-card textarea { color: var(--text-dark); background: var(--gray-x-light, #F7F5F3); border: 1px solid var(--stroke); }
+.closing-card textarea::placeholder { color: var(--text-muted); }
+.closing-wall { margin-top: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-3); max-height: 260px; overflow-y: auto; }
+.closing-item { display: flex; gap: var(--sp-3); padding: var(--sp-4); border-radius: 10px; background: var(--gray-x-light, #F7F5F3); }
+.closing-item-avatar { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 12px; font-weight: 800; }
+.closing-item-body { flex: 1; min-width: 0; }
+
+.photos-card { background: linear-gradient(180deg, rgba(232,40,62,0.05), #fff 90px); }
+.photos-card::before { background: linear-gradient(90deg, var(--red), var(--orange)); }
+.photos-card .or-card-icon { background: linear-gradient(135deg, var(--red), var(--orange)); }
+.photos-placeholder { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3);
+  border: 1.5px dashed var(--stroke); border-radius: 10px; padding: var(--sp-6); color: var(--text-muted); }
+.photos-placeholder span { font-size: 13px; text-align: center; }
+
+.page-close { text-align: center; padding-top: var(--sp-7); margin-top: var(--sp-4); }
+.page-close-rule { width: 40px; height: 3px; margin: 0 auto var(--sp-5); border-radius: 2px;
+  background: linear-gradient(90deg, var(--red), var(--pink), var(--violet)); }
+.page-close p { font-size: 15px; font-weight: 700; color: var(--text-dark); margin-bottom: var(--sp-3); }
+.page-close-top { font-size: 13px; color: var(--text-muted); text-decoration: underline; text-decoration-color: var(--stroke); }
+.page-close-top:hover { color: var(--pink); }
+.closing-item .who-name { font-weight: 800; font-size: 13px; color: var(--pink); }
+.closing-item .who-time { font-size: 11px; color: var(--text-muted); margin-left: 8px; }
+.closing-item p { font-size: 14px; color: var(--text-dark); margin: 4px 0 0; }
+.empty-dark { color: var(--text-muted); font-size: 14px; font-style: italic; margin: 0; }
+
+/* ===== Ask about GLS — floating chat widget ===== */
+.chat-fab { position: fixed; bottom: 24px; left: 24px; z-index: 150; width: 54px; height: 54px; border-radius: 50%; border: none;
+  background: linear-gradient(135deg, var(--red), var(--pink)); box-shadow: 0 10px 26px rgba(232,40,62,0.4);
+  display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 200ms; }
+.chat-fab:hover { transform: scale(1.06); }
+.chat-fab.open svg { transform: rotate(90deg); }
+.chat-fab svg { transition: transform 200ms; }
+
+.chat-panel { position: fixed; bottom: 90px; left: 24px; z-index: 150; width: 340px; max-width: calc(100vw - 48px); height: 440px;
+  max-height: calc(100vh - 130px); background: var(--ink); border-radius: 16px; overflow: hidden; display: none; flex-direction: column;
+  box-shadow: 0 30px 70px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
+.chat-panel.open { display: flex; }
+.chat-header { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-4) var(--sp-5);
+  background: linear-gradient(100deg, var(--red), var(--pink)); flex-shrink: 0; }
+.chat-title { font-weight: 800; font-size: 15px; color: #fff; }
+.chat-sub { font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 1px; }
+.chat-close { background: rgba(255,255,255,0.2); border: none; border-radius: 50%; width: 26px; height: 26px; display: flex;
+  align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+.chat-messages { flex: 1; overflow-y: auto; padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-3); }
+.chat-msg { font-size: 14px; line-height: 1.5; padding: 10px 14px; border-radius: 14px; max-width: 85%; }
+.chat-msg-bot { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.9); align-self: flex-start; border-bottom-left-radius: 4px; }
+.chat-msg-bot p { margin: 0 0 8px; }
+.chat-msg-bot p:last-child { margin-bottom: 0; }
+.chat-msg-bot strong { color: #fff; font-weight: 800; }
+.chat-msg-bot ul, .chat-msg-bot ol { margin: 4px 0 10px; padding-left: 20px; }
+.chat-msg-bot ul:last-child, .chat-msg-bot ol:last-child { margin-bottom: 0; }
+.chat-msg-bot li { margin-bottom: 6px; }
+.chat-msg-bot li:last-child { margin-bottom: 0; }
+.chat-msg-bot ul li::marker { color: var(--pink); }
+.chat-msg-bot ol li::marker { color: var(--pink); font-weight: 700; }
+.chat-msg-user { background: linear-gradient(100deg, var(--red), var(--pink)); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+.chat-msg-typing { display: inline-flex; gap: 4px; align-items: center; }
+.chat-msg-typing span { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.6); animation: typingDot 1.2s infinite; }
+.chat-msg-typing span:nth-child(2) { animation-delay: 0.2s; } .chat-msg-typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingDot { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
+.chat-input-row { display: flex; gap: var(--sp-3); padding: var(--sp-4); border-top: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
+.chat-input-row textarea { flex: 1; resize: none; font-family: var(--font); font-size: 14px; color: #fff; background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px 12px; max-height: 80px; }
+.chat-input-row textarea:focus { outline: none; border-color: var(--pink); }
+.chat-input-row textarea::placeholder { color: rgba(255,255,255,0.4); }
+.chat-send { flex-shrink: 0; width: 40px; height: 40px; border-radius: 10px; border: none; cursor: pointer;
+  background: linear-gradient(135deg, var(--red), var(--pink)); display: flex; align-items: center; justify-content: center; }
+@media (max-width: 480px) { .chat-fab { left: 16px; bottom: 16px; } .chat-panel { left: 16px; bottom: 82px; } }
+
+a, a:visited { color: inherit; }
+button:focus-visible, a:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--pink); outline-offset: 3px; }
+.confetti-piece { position: fixed; top: -20px; z-index: 999; pointer-events: none; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div id="cur-ring"></div>
+<div id="cur-dot"></div>
+
+<a href="#" class="chrome-brand" id="brandLink" data-cursor-hover>GLS</a>
+<div class="dots" id="dots">
+  <button data-target="screen0" class="active" aria-label="Welcome" data-cursor-hover></button>
+  <button data-target="screen1" aria-label="Agenda" data-cursor-hover></button>
+  <button data-target="screen2" aria-label="Reading" data-cursor-hover></button>
+  <button data-target="screen3" aria-label="Live" data-cursor-hover></button>
+  <button data-target="screen4" aria-label="Other resources" data-cursor-hover></button>
+</div>
+
+<button class="chat-fab" id="chatFab" aria-label="Ask about GLS" data-cursor-hover>
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 4h16v12H8l-4 4V4z" fill="white"/></svg>
+</button>
+
+<div class="chat-panel" id="chatPanel" role="dialog" aria-label="Ask about GLS">
+  <div class="chat-header">
+    <div>
+      <div class="chat-title">Ask about GLS</div>
+      <div class="chat-sub">Answers pulled from this page</div>
+    </div>
+    <button class="chat-close" id="chatClose" aria-label="Close" data-cursor-hover>
+      <svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 3l10 10M13 3L3 13" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="chat-messages" id="chatMessages">
+    <div class="chat-msg chat-msg-bot">Hi — ask me anything about GLS: the agenda, timing, venue, or what's in the reading list.</div>
+  </div>
+  <div class="chat-input-row">
+    <textarea id="chatInput" rows="1" placeholder="Ask a question…"></textarea>
+    <button class="chat-send" id="chatSend" aria-label="Send" data-cursor-hover>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h11M8 3l5 5-5 5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</div>
+
+<div id="app">
+
+  <section class="screen on-ink grain" data-screen="0" id="screen0">
+    <div class="aurora"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+    <div class="screen-inner">
+      <div class="hero-meta fade-up">28 October · Vienna, Austria</div>
+      <div class="hero-countdown fade-up"><span class="cd-dot"></span><span id="countdownDays">--</span> days to go</div>
+      <h1 id="heroTitle" data-tilt-text>GLS is coming.</h1>
+      <div class="hero-rule fade-up"></div>
+      <p class="lede fade-up" style="max-width:420px; margin:0 auto var(--sp-6);">A word from Nicolas on what to expect this year.</p>
+      <div class="media fade-up" id="media" role="button" tabindex="0" aria-label="Play welcome video with sound" data-cursor-hover>
+        <video id="heroVideo" playsinline autoplay muted loop>
+          <!-- Demo clip for the prototype — replace with Nicolas's actual video before this ships -->
+          <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
+        </video>
+        <div class="play"><div class="play-circle magnetic"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg></div></div>
+        <span class="mute-hint">Tap for sound</span>
+      </div>
+    </div>
+    <button class="next-cue" data-next="screen1" aria-label="Next: Agenda" data-cursor-hover>
+      <svg width="18" height="18" viewBox="0 0 18 18"><path d="M3 6l6 6 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <span>Agenda</span>
+    </button>
+  </section>
+
+  <section class="screen on-ink grain" data-screen="1" id="screen1">
+    <div class="aurora" style="opacity:0.25;"><span class="a2"></span><span class="a3"></span></div>
+    <div class="screen-inner" style="max-width:1000px;">
+      <h2 class="fade-up">CP Industry <span class="grad-text">Session</span></h2>
+      <p class="agenda-when muted fade-up">Wednesday, 28 October — 10:00 AM–1:00 PM, Vienna</p>
+
+      <div class="agenda-cards stagger">
+        <div class="agenda-card" data-color="red">
+          <div class="ac-icon"><svg width="64" height="64" viewBox="0 0 16 16" fill="none"><path d="M1 13l4-5 3 3 5-7" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="ac-time">10:00 – 10:45 AM</div>
+          <h3>Value creation in CP</h3>
+          <p><strong>Where the growth is actually coming from</strong> — the shifts separating winners from the pack.</p>
+          <div class="num-badge">1</div>
+        </div>
+        <div class="agenda-card" data-color="pink">
+          <div class="ac-icon"><svg width="64" height="64" viewBox="0 0 16 16" fill="none"><path d="M2 6l1-3h10l1 3M2 6v7a1 1 0 001 1h10a1 1 0 001-1V6M2 6h12M6 10h4" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="ac-time">10:45 AM – 12:00 PM</div>
+          <h3>Retail reimagined</h3>
+          <p><strong>What's changing</strong> in how CP companies actually reach consumers.</p>
+          <div class="num-badge">2</div>
+        </div>
+        <div class="agenda-card-break">
+          <span class="lbl">Break — 12:00–12:10 PM</span>
+        </div>
+        <div class="agenda-card" data-color="violet">
+          <div class="ac-icon"><svg width="64" height="64" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.4" stroke="currentColor" stroke-width="0.8"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.5 1.5M11.5 11.5L13 13M13 3l-1.5 1.5M4.5 11.5L3 13" stroke="currentColor" stroke-width="0.8" stroke-linecap="round"/></svg></div>
+          <div class="ac-time">12:10 – 12:55 PM</div>
+          <h3>Business transformation through AI in CP</h3>
+          <p><strong>How AI is reshaping</strong> the work itself, not just the output.</p>
+          <div class="num-badge">3</div>
+        </div>
+        <div class="agenda-card" data-color="gold" id="awardsRow">
+          <div class="ac-icon"><svg width="64" height="64" viewBox="0 0 16 16" fill="none"><path d="M8 1l1.8 3.6L14 5.2l-3 2.9.7 4.1L8 10.3l-3.7 1.9.7-4.1-3-2.9 4.2-.6L8 1z" stroke="currentColor" stroke-width="0.8" stroke-linejoin="round"/></svg></div>
+          <div class="ac-time">12:55 – 1:00 PM</div>
+          <h3>Closing &amp; Awards</h3>
+          <p><strong>Recognizing</strong> the year's standout work. 🏆</p>
+          <div class="num-badge">4</div>
+        </div>
+      </div>
+
+      <div class="ribbon-wrap fade-up">
+        <svg viewBox="0 0 1000 50" preserveAspectRatio="none" width="100%" height="50">
+          <defs>
+            <linearGradient id="ribGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#E8283E"/><stop offset="35%" stop-color="#EC4899"/>
+              <stop offset="65%" stop-color="#9B5CF6"/><stop offset="100%" stop-color="#F5B942"/>
+            </linearGradient>
+          </defs>
+          <path d="M0,20 C150,45 250,0 400,20 C550,42 650,2 800,22 C900,36 950,14 1000,22" stroke="url(#ribGrad)" stroke-width="1.4" fill="none" opacity="0.9"/>
+          <path d="M0,23 C150,48 250,3 400,23 C550,45 650,5 800,25 C900,39 950,17 1000,25" stroke="url(#ribGrad)" stroke-width="1.2" fill="none" opacity="0.6"/>
+          <path d="M0,26 C150,51 250,6 400,26 C550,48 650,8 800,28 C900,42 950,20 1000,28" stroke="url(#ribGrad)" stroke-width="1" fill="none" opacity="0.4"/>
+          <path d="M0,17 C150,42 250,-3 400,17 C550,39 650,-1 800,19 C900,33 950,11 1000,19" stroke="url(#ribGrad)" stroke-width="1" fill="none" opacity="0.3"/>
+        </svg>
+      </div>
+    </div>
+    <button class="next-cue" data-next="screen2" aria-label="Next: Reading" data-cursor-hover>
+      <span class="next-cue-prompt">Want to know more about these topics?</span>
+      <svg width="18" height="18" viewBox="0 0 18 18"><path d="M3 6l6 6 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <span>Reading</span>
+    </button>
+  </section>
+
+  <section class="screen on-paper" data-screen="2" id="screen2">
+    <div class="wash"><span class="w1"></span><span class="w2"></span><span class="w3"></span></div>
+    <div class="screen-inner">
+      <h2 class="fade-up">Get <span class="grad-text">up to speed</span></h2>
+      <p class="lede muted fade-up" style="max-width:460px; margin:0 auto var(--sp-5);">Three quick reads. Tap a card to open it, and check things off as you go.</p>
+
+      <div class="reading-progress fade-up">
+        <div class="progress-ring" id="progressRing">
+          <div class="progress-ring-inner"><span id="readingProgressPct">0%</span></div>
+        </div>
+        <div class="rp-label"><span id="readingProgressCount">0</span> of <span id="readingProgressTotal">0</span> read</div>
+      </div>
+
+      <div class="read-accordion stagger">
+        <div class="read-card" data-color="red" data-topic="value">
+          <button class="read-card-head" aria-expanded="false">
+            <div class="icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M1 13l4-5 3 3 5-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="head-text">
+              <h3>Value creation in CP</h3>
+              <div class="sub">Where the growth is actually coming from</div>
+            </div>
+            <div class="progress-chip" data-chip="value">0/2</div>
+            <svg class="chev" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+          </button>
+          <div class="read-card-body">
+            <div class="read-card-body-inner">
+              <label class="check-item">
+                <input type="checkbox" data-resource="value-future-cp">
+                <span class="check-box"></span>
+                <span class="check-label"><a href="https://iris.bain.com/content-viewer/G1LWAV" target="_blank" rel="noopener">The Future of Consumer Products</a> <span class="src">— Iris</span></span>
+              </label>
+              <label class="check-item">
+                <input type="checkbox" data-resource="value-road-forward">
+                <span class="check-box"></span>
+                <span class="check-label"><a href="https://www.bain.com/insights/the-road-forward-to-value-creation-in-consumer-products/" target="_blank" rel="noopener">The Road Forward to Value Creation</a> <span class="src">— Bain.com</span></span>
+              </label>
+              <div class="read-item pending">Value creation IP — pending from Sarah</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="read-card" data-color="pink" data-topic="retail">
+          <button class="read-card-head" aria-expanded="false">
+            <div class="icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M2 6l1-3h10l1 3M2 6v7a1 1 0 001 1h10a1 1 0 001-1V6M2 6h12M6 10h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="head-text">
+              <h3>Retail reimagined</h3>
+              <div class="sub">What's changing in how CP reaches consumers</div>
+            </div>
+            <div class="progress-chip pending-chip">Pending</div>
+            <svg class="chev" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+          </button>
+          <div class="read-card-body">
+            <div class="read-card-body-inner">
+              <div class="read-item pending">Latest from Fatima — pending</div>
+              <div class="read-item pending">Agentic commerce &amp; dComm — being finalized</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="read-card" data-color="violet" data-topic="ai">
+          <button class="read-card-head" aria-expanded="false">
+            <div class="icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.4" stroke="currentColor" stroke-width="1.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.5 1.5M11.5 11.5L13 13M13 3l-1.5 1.5M4.5 11.5L3 13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+            <div class="head-text">
+              <h3>AI transformation in CP</h3>
+              <div class="sub">How AI is reshaping the work itself</div>
+            </div>
+            <div class="progress-chip" data-chip="ai">0/2</div>
+            <svg class="chev" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+          </button>
+          <div class="read-card-body">
+            <div class="read-card-body-inner">
+              <label class="check-item">
+                <input type="checkbox" data-resource="ai-selling-support">
+                <span class="check-box"></span>
+                <span class="check-label"><a href="https://iris.bain.com/content-viewer/IDR739" target="_blank" rel="noopener">AI Transformation — Selling Support</a> <span class="src">— Iris</span></span>
+              </label>
+              <label class="check-item">
+                <input type="checkbox" data-resource="ai-vercel-page">
+                <span class="check-box"></span>
+                <span class="check-label"><a href="https://ai-tools-in-cp.vercel.app" target="_blank" rel="noopener">AI Tools in CP</a> <span class="src">— our Vercel page</span></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="your-notes fade-up">
+        <h3>Your notes</h3>
+        <p class="muted small">Jot down thoughts, questions, or things you want to raise in the room. Only visible to you, saved automatically.</p>
+        <textarea id="userNotes" rows="4" placeholder="Type here…"></textarea>
+        <div class="notes-status" id="notesStatus">&nbsp;</div>
+      </div>
+    </div>
+    <button class="next-cue" data-next="screen3" style="color: var(--text-muted);" aria-label="Next: Live" data-cursor-hover>
+      <svg width="18" height="18" viewBox="0 0 18 18"><path d="M3 6l6 6 6-6" stroke="#8A8A93" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <span>Live</span>
+    </button>
+  </section>
+
+  <section class="screen on-ink grain" data-screen="3" id="screen3">
+    <div class="aurora" style="opacity:0.4;"><span class="a1"></span><span class="a2"></span></div>
+    <div class="screen-inner" style="max-width: 760px;">
+      <div class="live-status fade-up"><span class="live-dot"></span>Activates live on 28 Oct</div>
+      <h2 class="fade-up grad-text" style="display:inline-block;">It's your turn.</h2>
+
+      <div class="live-tabs fade-up">
+        <button class="live-tab active" data-tab="discuss" data-cursor-hover>Discuss</button>
+        <button class="live-tab" data-tab="room" data-cursor-hover>Live from the room</button>
+      </div>
+
+      <div class="tab-panel" data-panel="discuss">
+        <div class="case-study-card fade-up">
+          <span class="cs-label">Case study</span>
+          <p class="cs-question">Placeholder — the case study will be introduced here on the day, and the room's thinking will play out live below.</p>
+        </div>
+
+        <div class="answer-card fade-up">
+          <h3 class="answer-card-title">Share your thoughts</h3>
+          <input type="text" id="partnerName" class="name-input" placeholder="Your name" data-cursor-hover>
+          <div class="compose-row">
+            <textarea id="submissionInput" rows="1" placeholder="Share your thoughts…" data-cursor-hover></textarea>
+            <button class="ds-btn magnetic" id="submitBtn" data-cursor-hover>Post</button>
+          </div>
+          <label class="file-label" for="photoInput" data-cursor-hover>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="11" rx="1.5" stroke="currentColor"/><circle cx="5" cy="7" r="1.3" stroke="currentColor"/><path d="M1 12l4-3.5 3 2.5 3-3 4 4" stroke="currentColor"/></svg>
+            Attach a photo instead
+          </label>
+          <input type="file" id="photoInput" accept="image/*" style="display:none;">
+          <img id="photoPreview" class="photo-preview" alt="Attached preview">
+        </div>
+      </div>
+
+      <div class="tab-panel" data-panel="room" style="display:none;">
+        <div class="feed-header">
+          <h3>What the room is saying</h3>
+          <span class="live-dot small"></span>
+          <button class="feed-preview-btn" id="feedPreviewBtn" data-cursor-hover>Preview with 40 sample thoughts</button>
+        </div>
+        <div class="responses-wall" id="submissionsList"><p class="empty">No responses yet — be the first.</p></div>
+      </div>
+    </div>
+    <button class="next-cue" data-next="screen4" aria-label="Next: Other resources" data-cursor-hover>
+      <svg width="18" height="18" viewBox="0 0 18 18"><path d="M3 6l6 6 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <span>More</span>
+    </button>
+  </section>
+
+  <section class="screen on-paper" data-screen="4" id="screen4">
+    <div class="wash"><span class="w1"></span><span class="w2"></span><span class="w3"></span></div>
+    <div class="screen-inner" style="max-width: 700px;">
+      <h2 class="fade-up">Other <span class="grad-text">resources</span></h2>
+      <p class="lede muted fade-up" style="max-width: 480px; margin: 0 auto var(--sp-6);">Beyond the core agenda — from the session, from other teams, and tools worth knowing about.</p>
+
+      <div class="or-section fade-up">
+        <div class="or-section-label">From other teams</div>
+        <div class="or-empty">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2 20c0-3 2.5-5 6-5s6 2 6 5M10 20c0-3 2.5-5 6-5s6 2 6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span>Nothing added yet — this is where good work from adjacent capabilities (like AIS) will live.</span>
+        </div>
+      </div>
+
+      <div class="or-section fade-up" id="fromSessionSection">
+        <div class="or-section-label">From the session</div>
+
+        <div class="or-card recap-card">
+          <div class="or-card-head">
+            <div class="or-card-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M8 1l1.2 3.6L13 6l-3.8 1.4L8 11l-1.2-3.6L3 6l3.8-1.4L8 1z" fill="white"/></svg></div>
+            <h3>Session recap</h3>
+            <button class="recap-btn" id="recapBtn" data-cursor-hover>Generate recap</button>
+          </div>
+          <div id="recapOutput" class="recap-output">
+            <p class="muted small" style="margin:0;">Once the case-study discussion has some thoughts in it, generate a synthesized recap here — the key themes from the room, not a copy of the raw feed.</p>
+          </div>
+        </div>
+
+        <div class="or-card closing-card">
+          <div class="or-card-head">
+            <div class="or-card-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M2 3h12v7H6l-3 3v-3H2V3z" stroke="white" stroke-width="1.4" stroke-linejoin="round"/></svg></div>
+            <h3>Before you go — what's one takeaway?</h3>
+          </div>
+          <input type="text" id="closingName" class="name-input" placeholder="Your name (optional)" data-cursor-hover>
+          <div class="compose-row">
+            <textarea id="closingInput" rows="1" placeholder="One thing you're taking away from today…" data-cursor-hover></textarea>
+            <button class="ds-btn magnetic" id="closingSubmitBtn" data-cursor-hover>Share</button>
+          </div>
+          <div class="closing-wall" id="closingWall"><p class="empty-dark">No closing thoughts yet.</p></div>
+        </div>
+
+        <button class="archive-toggle fade-up" id="archiveToggle" data-cursor-hover>Show every thought from the discussion</button>
+        <div class="archive-gallery" id="archiveGallery" style="display:none;"></div>
+
+        <div class="or-card photos-card">
+          <div class="or-card-head">
+            <div class="or-card-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="11" rx="1.5" stroke="white" stroke-width="1.3"/><circle cx="5" cy="7" r="1.3" stroke="white" stroke-width="1.1"/><path d="M2 12l4-3.5 3 2.5 3-3 4 4" stroke="white" stroke-width="1.2" stroke-linejoin="round"/></svg></div>
+            <h3>Session photos</h3>
+          </div>
+          <div class="photos-placeholder">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="10" r="1.8" stroke="currentColor" stroke-width="1.4"/><path d="M2 17l5.5-5.5L12 16l3.5-3.5L22 18" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+            <span>Photos from the day will be added here after GLS.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-close fade-up">
+        <div class="page-close-rule"></div>
+        <p id="pageCloseMsg">That's everything — see you in Vienna on 28 October.</p>
+        <a href="#" class="page-close-top" id="backToTopLink" data-cursor-hover>Back to the top ↑</a>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Real, persistent storage backed by /api/storage (Vercel KV) — replaces window.storage,
+// which previously only existed inside Claude's own preview environment. Same shape
+// (get/set/list with a personal/shared flag) so none of the feature code below needs to change.
+// "Personal" data is namespaced per-browser using a random device ID kept in localStorage,
+// since there's no login system on this page.
+(function installStoragePolyfill() {
+  const DEVICE_ID_KEY = 'gls-device-id';
+  function getDeviceId() {
+    let id;
+    try { id = localStorage.getItem(DEVICE_ID_KEY); } catch (e) { /* localStorage unavailable */ }
+    if (!id) {
+      id = 'dev-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      try { localStorage.setItem(DEVICE_ID_KEY, id); } catch (e) {}
+    }
+    return id;
+  }
+  function scopedKey(key, shared) { return shared ? key : `personal:${getDeviceId()}:${key}`; }
+
+  window.storage = {
+    async get(key, shared) {
+      const full = scopedKey(key, shared);
+      const res = await fetch(`/api/storage?action=get&key=${encodeURIComponent(full)}`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return { key, value: data.value, shared: !!shared };
+    },
+    async set(key, value, shared) {
+      const full = scopedKey(key, shared);
+      const res = await fetch('/api/storage', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: full, value })
+      });
+      if (!res.ok) return null;
+      return { key, value, shared: !!shared };
+    },
+    async list(prefix, shared) {
+      const full = scopedKey(prefix, shared);
+      const res = await fetch(`/api/storage?action=list&prefix=${encodeURIComponent(full)}`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      const keys = shared ? data.keys : data.keys.map(k => k.replace(`personal:${getDeviceId()}:`, ''));
+      return { keys, prefix, shared: !!shared };
+    },
+    async delete(key, shared) {
+      const full = scopedKey(key, shared);
+      const res = await fetch(`/api/storage?key=${encodeURIComponent(full)}`, { method: 'DELETE' });
+      if (!res.ok) return null;
+      return { key, deleted: true, shared: !!shared };
+    }
+  };
+})();
+
+// window.storage now always exists (backed by the real API above) once this file runs on
+// Vercel with the /api routes deployed. This check is kept as a safety net in case those
+// routes or the KV database aren't wired up yet.
+const STORAGE_AVAILABLE = typeof window.storage !== 'undefined' && window.storage !== null;
+if (!STORAGE_AVAILABLE) {
+  console.info('[GLS page] window.storage is not available — check that the /api/storage route and Vercel KV database are set up.');
+}
+const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+const app = document.getElementById('app');
+const screens = Array.from(document.querySelectorAll('.screen'));
+const dots = Array.from(document.querySelectorAll('.dots button'));
+
+/* ===== Custom cursor ===== */
+if (finePointer && !reduceMotion) {
+  document.body.classList.add('has-custom-cursor');
+  const curDot = document.getElementById('cur-dot');
+  const curRing = document.getElementById('cur-ring');
+  let rx = 0, ry = 0, tx = 0, ty = 0;
+  window.addEventListener('mousemove', (e) => {
+    tx = e.clientX; ty = e.clientY;
+    curDot.style.left = tx + 'px'; curDot.style.top = ty + 'px';
+  });
+  function ringLoop() {
+    rx += (tx - rx) * 0.18; ry += (ty - ry) * 0.18;
+    curRing.style.left = rx + 'px'; curRing.style.top = ry + 'px';
+    requestAnimationFrame(ringLoop);
+  }
+  ringLoop();
+  document.querySelectorAll('[data-cursor-hover]').forEach(el => {
+    el.addEventListener('mouseenter', () => curRing.classList.add('grow'));
+    el.addEventListener('mouseleave', () => curRing.classList.remove('grow'));
+  });
+} else {
+  document.getElementById('cur-dot').style.display = 'none';
+  document.getElementById('cur-ring').style.display = 'none';
+}
+
+try {
+  /* Split hero title into words for CSS-driven staggered reveal */
+  function splitWords(el) {
+    const text = el.textContent;
+    el.innerHTML = text.split(' ').map((w, i) => `<span class="word"><span style="animation-delay:${i * 90}ms">${w}</span></span>`).join(' ');
+  }
+  splitWords(document.getElementById('heroTitle'));
+
+  // Highlight the last word ("coming.") with the same moving gradient used elsewhere
+  const heroWordSpans = document.querySelectorAll('#heroTitle .word > span');
+  if (heroWordSpans.length) heroWordSpans[heroWordSpans.length - 1].classList.add('grad-text');
+
+  // Live countdown to the event — recalculates on load, and keeps itself correct
+  // even if the tab is left open across midnight (checked every 30 min).
+  const GLS_EVENT_DATE = new Date('2026-10-28T00:00:00');
+  const daysEl = document.getElementById('countdownDays');
+  function updateCountdown() {
+    if (!daysEl) return;
+    const diffDays = Math.max(0, Math.ceil((GLS_EVENT_DATE - new Date()) / 86400000));
+    daysEl.textContent = diffDays;
+  }
+  updateCountdown();
+  setInterval(updateCountdown, 30 * 60 * 1000);
+
+  // Headline responds to the cursor with a subtle tilt, like the reading cards
+  if (finePointer && !reduceMotion) {
+    const tiltHeadline = document.querySelector('[data-tilt-text]');
+    if (tiltHeadline) {
+      tiltHeadline.style.transition = 'transform 200ms ease-out';
+      window.addEventListener('mousemove', (e) => {
+        const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+        const px = (e.clientX - cx) / cx, py = (e.clientY - cy) / cy;
+        tiltHeadline.style.transform = `perspective(800px) rotateY(${px * 4}deg) rotateX(${-py * 3}deg)`;
+      });
+    }
+  }
+
+  /* Track active screen: drives CSS reveals + dot state */
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && entry.intersectionRatio > 0.55) {
+        entry.target.classList.add('active');
+        dots.forEach(d => d.classList.toggle('active', d.dataset.target === entry.target.id));
+        const isPaper = entry.target.classList.contains('on-paper');
+        document.getElementById('dots').classList.toggle('dots--dark', isPaper);
+        if (entry.target.id === 'screen1') maybeFireAwardsConfetti();
+      }
+    });
+  }, { threshold: [0, 0.55, 1] });
+  screens.forEach(s => io.observe(s));
+  screens[0].classList.add('active');
+
+  // Only now enable the "start hidden, animate in" CSS states — if anything above threw, this line never runs and content stays visible by default.
+  document.documentElement.classList.add('js-ready');
+} catch (err) {
+  console.error('GLS page: animation setup failed, falling back to static visible content.', err);
+}
+// Safety net regardless of the above: make sure nothing can stay stuck hidden.
+setTimeout(() => { document.querySelectorAll('.screen').forEach(s => s.classList.add('active')); }, 3000);
+
+function goTo(id) { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' }); }
+const backToTopLink = document.getElementById('backToTopLink');
+if (backToTopLink) backToTopLink.addEventListener('click', (e) => { e.preventDefault(); goTo('screen0'); });
+dots.forEach(d => d.addEventListener('click', () => goTo(d.dataset.target)));
+document.querySelectorAll('[data-next]').forEach(btn => btn.addEventListener('click', () => goTo(btn.dataset.next)));
+document.getElementById('brandLink').addEventListener('click', (e) => { e.preventDefault(); goTo('screen0'); });
+
+window.addEventListener('keydown', (e) => {
+  const visible = screens.filter(s => s.style.display !== 'none');
+  const current = visible.findIndex(s => s.classList.contains('active'));
+  if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); goTo(visible[Math.min(current + 1, visible.length - 1)].id); }
+  if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); goTo(visible[Math.max(current - 1, 0)].id); }
+});
+
+/* ===== The case study is the meeting-day surprise — hidden until then =====
+   Add ?preview=live to the URL to check it internally before the day. */
+const GLS_DATE = new Date('2026-10-28T00:00:00');
+const isPreview = new URLSearchParams(location.search).get('preview') === 'live';
+const isLiveDay = new Date() >= GLS_DATE || isPreview;
+
+// The closing sign-off matches whatever state the rest of the page is in — if the Live screen
+// is unlocked (either for real, on the day, or via ?preview=live to check it early), the whole
+// experience should feel consistent, so the closing message reflects that too.
+const pageCloseMsg = document.getElementById('pageCloseMsg');
+if (pageCloseMsg) {
+  pageCloseMsg.textContent = isLiveDay
+    ? "Thank you for being part of it — it was genuinely great having you in the room today."
+    : "That's everything — see you in Vienna on 28 October.";
+}
+if (!isLiveDay) {
+  const liveScreen = document.getElementById('screen3');
+  const liveDot = document.querySelector('.dots button[data-target="screen3"]');
+  liveScreen.style.display = 'none';
+  if (liveDot) liveDot.style.display = 'none';
+  const readingNext = document.querySelector('#screen2 [data-next="screen3"]');
+  if (readingNext) { readingNext.dataset.next = 'screen4'; readingNext.querySelector('span').textContent = 'More'; }
+  const fromSessionSection = document.getElementById('fromSessionSection');
+  if (fromSessionSection) fromSessionSection.style.display = 'none';
+}
+
+/* Hero video: plays ambient/muted immediately; tap unmutes for the real experience */
+const media = document.getElementById('media');
+const heroVideo = document.getElementById('heroVideo');
+media.addEventListener('click', () => {
+  heroVideo.muted = !heroVideo.muted;
+  heroVideo.setAttribute('controls', '');
+  media.classList.toggle('unmuted', !heroVideo.muted);
+});
+media.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') media.click(); });
+
+/* Reading screen: click-to-expand cards + a persistent checklist with progress */
+const READ_STATUS_KEY = 'gls-read-status';
+const readCheckboxes = Array.from(document.querySelectorAll('.check-item input[type="checkbox"]'));
+const readCards = Array.from(document.querySelectorAll('.read-card[data-topic]'));
+
+document.querySelectorAll('.read-card-head').forEach(head => {
+  head.addEventListener('click', () => {
+    const card = head.closest('.read-card');
+    const isOpen = card.classList.toggle('open');
+    head.setAttribute('aria-expanded', isOpen);
+  });
+});
+
+function updateReadingProgress() {
+  const total = readCheckboxes.length;
+  const done = readCheckboxes.filter(cb => cb.checked).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const countEl = document.getElementById('readingProgressCount');
+  const totalEl = document.getElementById('readingProgressTotal');
+  const ringEl = document.getElementById('progressRing');
+  const pctEl = document.getElementById('readingProgressPct');
+  if (countEl) countEl.textContent = done;
+  if (totalEl) totalEl.textContent = total;
+  if (ringEl) ringEl.style.setProperty('--pct', pct);
+  if (pctEl) pctEl.textContent = `${pct}%`;
+
+  readCards.forEach(card => {
+    const chip = card.querySelector('.progress-chip[data-chip]');
+    if (!chip) return; // pending-only cards keep their static "Pending" chip
+    const boxes = card.querySelectorAll('.check-item input[type="checkbox"]');
+    const cardDone = Array.from(boxes).filter(cb => cb.checked).length;
+    chip.textContent = `${cardDone}/${boxes.length}`;
+    chip.classList.toggle('chip-done', boxes.length > 0 && cardDone === boxes.length);
+  });
+}
+
+async function loadReadStatus() {
+  if (STORAGE_AVAILABLE) {
+    try {
+      const result = await window.storage.get(READ_STATUS_KEY, false);
+      if (result && result.value) {
+        const saved = JSON.parse(result.value);
+        readCheckboxes.forEach(cb => { if (saved[cb.dataset.resource]) cb.checked = true; });
+      }
+    } catch (e) { /* nothing saved yet — that's fine */ }
+  }
+  updateReadingProgress();
+}
+loadReadStatus();
+
+readCheckboxes.forEach(cb => {
+  cb.addEventListener('change', async () => {
+    updateReadingProgress();
+    if (!STORAGE_AVAILABLE) return;
+    try {
+      const result = await window.storage.get(READ_STATUS_KEY, false);
+      const saved = (result && result.value) ? JSON.parse(result.value) : {};
+      saved[cb.dataset.resource] = cb.checked;
+      await window.storage.set(READ_STATUS_KEY, JSON.stringify(saved), false);
+    } catch (e) { /* couldn't persist — the checkbox still works for this session */ }
+  });
+});
+
+/* Personal notes — a private scratchpad for this reading screen, saved per-browser */
+const USER_NOTES_KEY = 'gls-user-notes';
+const userNotesEl = document.getElementById('userNotes');
+const notesStatusEl = document.getElementById('notesStatus');
+let notesSaveTimer = null;
+
+function showNotesStatus(text) {
+  if (!notesStatusEl) return;
+  notesStatusEl.textContent = text;
+  notesStatusEl.classList.add('show');
+  clearTimeout(notesSaveTimer);
+  notesSaveTimer = setTimeout(() => notesStatusEl.classList.remove('show'), 1800);
+}
+
+async function loadUserNotes() {
+  if (!userNotesEl) return;
+  if (!STORAGE_AVAILABLE) { showNotesStatus("Won't be saved outside Claude's preview"); return; }
+  try {
+    const result = await window.storage.get(USER_NOTES_KEY, false);
+    if (result && result.value) userNotesEl.value = result.value;
+  } catch (e) { /* nothing saved yet */ }
+}
+loadUserNotes();
+
+if (userNotesEl) {
+  let debounceTimer = null;
+  userNotesEl.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(async () => {
+      if (!STORAGE_AVAILABLE) { showNotesStatus("Won't be saved outside Claude's preview"); return; }
+      try {
+        await window.storage.set(USER_NOTES_KEY, userNotesEl.value, false);
+        showNotesStatus('Saved');
+      } catch (e) { showNotesStatus('Could not save just now'); }
+    }, 700);
+  });
+}
+
+
+/* Native confetti via Web Animations API — no external library */
+function burstConfetti(originEl) {
+  if (reduceMotion) return;
+  const colors = ['#E8283E', '#FF8A3D', '#EC4899', '#9B5CF6', '#4C6FFF', '#F5B942'];
+  const rect = originEl ? originEl.getBoundingClientRect() : { left: window.innerWidth / 2, top: window.innerHeight / 3, width: 0 };
+  const originX = rect.left + rect.width / 2;
+  for (let i = 0; i < 36; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    const size = 6 + Math.random() * 6;
+    el.style.width = size + 'px';
+    el.style.height = (size * 0.5) + 'px';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    el.style.left = (originX + (Math.random() - 0.5) * 60) + 'px';
+    el.style.top = rect.top + 'px';
+    document.body.appendChild(el);
+    const dx = (Math.random() - 0.5) * 360;
+    const dy = 240 + Math.random() * 260;
+    const rot = Math.random() * 720 - 360;
+    const anim = el.animate(
+      [{ transform: 'translate(0,0) rotate(0deg)', opacity: 1 }, { transform: `translate(${dx}px, ${dy}px) rotate(${rot}deg)`, opacity: 0 }],
+      { duration: 1400 + Math.random() * 700, easing: 'cubic-bezier(.2,.7,.4,1)' }
+    );
+    anim.onfinish = () => el.remove();
+  }
+}
+let awardsFired = false;
+function maybeFireAwardsConfetti() { if (awardsFired) return; awardsFired = true; setTimeout(() => burstConfetti(document.getElementById('awardsRow')), 500); }
+
+document.querySelectorAll('.magnetic').forEach(el => {
+  if (reduceMotion || !finePointer) return;
+  el.addEventListener('mousemove', (e) => {
+    const r = el.getBoundingClientRect();
+    const x = e.clientX - r.left - r.width / 2; const y = e.clientY - r.top - r.height / 2;
+    el.style.transform = `translate(${x * 0.25}px, ${y * 0.25}px)`;
+  });
+  el.addEventListener('mouseleave', () => { el.style.transform = 'translate(0,0)'; });
+});
+
+/* Live case-study submissions — text and/or photo, attributed by name, shared storage */
+const submissionsList = document.getElementById('submissionsList');
+const submissionInput = document.getElementById('submissionInput');
+const submitBtn = document.getElementById('submitBtn');
+const photoInput = document.getElementById('photoInput');
+const photoPreview = document.getElementById('photoPreview');
+const partnerNameInput = document.getElementById('partnerName');
+let pendingPhoto = null;
+let previewOn = false; // whether the "40 sample thoughts" preview is currently showing
+const PARTNER_NAME_KEY = 'gls-partner-name';
+
+// Remember the partner's name across visits, on this browser, so they don't retype it each time.
+(async function loadPartnerName() {
+  if (!STORAGE_AVAILABLE || !partnerNameInput) return;
+  try {
+    const result = await window.storage.get(PARTNER_NAME_KEY, false);
+    if (result && result.value) partnerNameInput.value = result.value;
+  } catch (e) { /* no name saved yet */ }
+})();
+if (partnerNameInput) {
+  partnerNameInput.addEventListener('change', async () => {
+    if (!STORAGE_AVAILABLE) return;
+    try { await window.storage.set(PARTNER_NAME_KEY, partnerNameInput.value.trim(), false); } catch (e) {}
+  });
+}
+
+function resizeImage(file, maxWidth) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width * scale; canvas.height = img.height * scale;
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.6));
+      };
+      img.onerror = reject; img.src = e.target.result;
+    };
+    reader.onerror = reject; reader.readAsDataURL(file);
+  });
+}
+photoInput.addEventListener('change', async () => {
+  const file = photoInput.files[0]; if (!file) return;
+  try { pendingPhoto = await resizeImage(file, 640); photoPreview.src = pendingPhoto; photoPreview.classList.add('show'); }
+  catch (e) { alert('Could not read that image — try a different file.'); }
+});
+
+function timeAgo(ts) {
+  const diff = Math.max(0, Date.now() - ts);
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  return `${hrs}h ago`;
+}
+
+const ACCENT_COLORS = ['red', 'pink', 'violet', 'gold'];
+function accentForName(name) {
+  const str = (name && name.trim()) ? name.trim() : 'anonymous';
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  return ACCENT_COLORS[hash % ACCENT_COLORS.length];
+}
+
+function renderSubmission(item) {
+  const wrap = document.createElement('div'); wrap.className = 'response';
+  const accent = accentForName(item.name);
+  wrap.dataset.accent = accent;
+  wrap.style.setProperty('--tilt', `${(Math.random() * 6 - 3).toFixed(2)}deg`);
+
+  const avatar = document.createElement('div'); avatar.className = 'response-avatar';
+  avatar.style.background = avatarGradientFor(accent);
+  avatar.textContent = initialsFor(item.name);
+  wrap.appendChild(avatar);
+
+  const body = document.createElement('div'); body.className = 'response-body';
+  const who = document.createElement('div'); who.className = 'who';
+  const name = document.createElement('span'); name.className = 'who-name';
+  name.textContent = (item.name && item.name.trim()) ? item.name.trim() : 'Anonymous partner';
+  const time = document.createElement('span'); time.className = 'who-time';
+  time.textContent = timeAgo(item.ts || Date.now());
+  who.appendChild(name); who.appendChild(time);
+  body.appendChild(who);
+  if (item.text) { const p = document.createElement('p'); p.textContent = item.text; body.appendChild(p); }
+  if (item.photo) { const img = document.createElement('img'); img.src = item.photo; img.alt = 'Partner submission'; body.appendChild(img); }
+  wrap.appendChild(body);
+  return wrap;
+}
+
+// Tab switcher between Discuss and Live from the room
+document.querySelectorAll('.live-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.live-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const target = tab.dataset.tab;
+    document.querySelectorAll('#screen3 .tab-panel').forEach(panel => {
+      panel.style.display = panel.dataset.panel === target ? '' : 'none';
+    });
+  });
+});
+
+// Real submissions are cached client-side so we can (a) tell what's genuinely new on each
+// poll, and (b) instantly restore the real feed after leaving preview mode without a refetch.
+const renderedKeys = new Set();
+let realItemsCache = []; // newest-first
+
+function renderRealFeedFromCache() {
+  submissionsList.innerHTML = '';
+  if (realItemsCache.length === 0) { submissionsList.innerHTML = '<p class="empty">No responses yet — be the first.</p>'; return; }
+  realItemsCache.forEach(item => submissionsList.appendChild(renderSubmission(item)));
+}
+
+async function loadSubmissions() {
+  if (!STORAGE_AVAILABLE) { submissionsList.innerHTML = '<p class="empty">Live saving isn\'t available outside Claude\'s preview — this needs a real backend once deployed.</p>'; return; }
+  try {
+    const result = await window.storage.list('gls-case-submission:', true);
+    if (!result || !result.keys || result.keys.length === 0) {
+      realItemsCache = [];
+      if (!previewOn) submissionsList.innerHTML = '<p class="empty">No responses yet — be the first.</p>';
+      return;
+    }
+    const newKeys = result.keys.filter(k => !renderedKeys.has(k));
+    if (newKeys.length === 0) return; // nothing new — leave the DOM completely untouched, no flicker
+
+    const newItems = [];
+    for (const key of newKeys) {
+      try { const entry = await window.storage.get(key, true); if (entry && entry.value) newItems.push({ key, ...JSON.parse(entry.value) }); } catch (e) {}
+    }
+    newItems.sort((a, b) => (a.ts || 0) - (b.ts || 0)); // oldest of the new batch first
+    newItems.forEach(item => { renderedKeys.add(item.key); realItemsCache.unshift(item); }); // ends newest-first
+
+    if (previewOn) return; // cache is updated, but don't disturb the sample preview on screen
+
+    const emptyEl = submissionsList.querySelector('.empty');
+    if (emptyEl) emptyEl.remove();
+    newItems.forEach(item => submissionsList.prepend(renderSubmission(item))); // newest ends up on top
+  } catch (e) {
+    if (realItemsCache.length === 0) submissionsList.innerHTML = '<p class="empty">Could not load responses in this preview.</p>';
+  }
+}
+loadSubmissions();
+
+/* Preview mode: shows what the feed looks like with a full room of partners posting.
+   Purely a visual preview — doesn't touch real stored submissions. */
+const FIRST_NAMES = ['Elena', 'Rahul', 'Sofia', 'James', 'Priya', 'Marco', 'Aisha', 'Tom', 'Ingrid', 'Diego',
+  'Yuki', 'Fatima', 'Lars', 'Chloe', 'Omar', 'Nadia', 'Ben', 'Mei', 'Carlos', 'Grace'];
+const LAST_NAMES = ['M.', 'K.', 'R.', 'W.', 'S.', 'T.', 'B.', 'L.', 'V.', 'H.'];
+const SAMPLE_THOUGHTS = [
+  "We're seeing the same zombie-brand drag in our own portfolio — the hard part is actually saying no to a brand people are emotionally attached to internally.",
+  "Agree with the retail power shift point. Our biggest retailer now dictates most of our promo calendar, not the other way around.",
+  "The GLP-1 impact is bigger than we're modeling for in snacking. Worth a deeper dive next quarter.",
+  "Our AI pilots keep dying in \"pilot purgatory\" because there's no clear business owner — this resonates a lot.",
+  "Curious if anyone's actually seen real margin improvement from tech spend, or is it still mostly top-line?",
+  "The insurgent brand stat matches what we're seeing in EU too — private label is eating more share than any single competitor.",
+  "This is exactly the retailer conversation we need to have internally. Sharing this slide with my team tomorrow.",
+  "We tried the \"better to best\" capability focus last year — hardest part was picking just one or two areas.",
+  "Would love to hear how others are thinking about agentic commerce for B2B, not just consumer.",
+  "The \"business transformation not tech deployment\" framing is the single most useful reframe from today.",
+  "Our biggest blocker on AI ROI is data quality, not the models. Feels underrated in most of these discussions.",
+  "Genuinely didn't expect tech budgets to be 2x 2020 with so little margin payoff — sobering number.",
+  "The hero/twilight/zombie framing is going straight into our next portfolio review deck.",
+  "We're a smaller player — curious how much of this applies below the top 25 CPGs.",
+  "Retail media as a profit center is already bigger than I expected for some of our partners.",
+];
+
+function generateMockResponses(count) {
+  const now = Date.now();
+  const items = [];
+  for (let i = 0; i < count; i++) {
+    const first = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+    const last = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+    items.push({
+      name: `${first} ${last}`,
+      text: SAMPLE_THOUGHTS[Math.floor(Math.random() * SAMPLE_THOUGHTS.length)],
+      photo: i === 3 ? 'data:image/jpeg;base64,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u6+WjLxghmwD17Guh/4TzS9P/wCQL4Ws7eWH5YLmXBcL0y2ADkrnPzd+p75Wp+O/EWpsc37Wse4MI7X92AQMfeHzEd8En+VF5vZBzVHsreprN4M0Tw2qXHifWFeTbuFjag7nOTjnrtIUjOF5P3h3g1Tx4sNkNN8LWf8AZVoPvSAASyfKB74P+1kscA5FcdijFHs7/FqCpX1m7iyySTSvLK7SSOxZ3Y5LE9ST3NNxS4oxWljUTFGKXFGKAExRilxRigBMUYpcUYoATFGKXFGKAExRilxRigBMUYpcUYoATFGKXFGKAExRilxRigB2KMUuKMU7FCYoxS4oxRYBMUYpcUYosAmKMUuKMUWATFGKXFGKLAJijFLijFFgExRilxRiiwCYoxS4oxRYBMUYpcUYosAmKMUuKMUWATFGKXFGKLAJijFLijFFgExRilxRiiwCYoxS4oxRYBMUYpcUYosAmKMUuKMUWATFGKXFGKLAJijFLijFFgExRilxRiiwCYoxS4oxRYBMUYpcUYosAmKMUuKMUWATFGKXFGKLAJijFLijFFgExRilxRiiwC4oxTqKoY3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQA3FGKdRQAtFOxRiqGNop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUANop2KMUALijFLijFMYmKMUuKMUAJijFLijFACYoxS4oxQAmKMUuKMUAJijFLijFACYoxS4oxQAmKMUuKMUAJijFLijFACYoxS4oxQAmKMUuKMUAJijFLijFACYoxS4oxQAmKMUuKMUAJijFLijFACYoxS4oxQAmKMUuKMUAJijFLijFACYoxS4oxQAmKMUuKMUAJijFLijFACYoxS4oxQAmKMUuKMUAJijFLijFACYoxS4oxQA6iloqihKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigBKKWigB1FFFMYUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQB//Z' : null,
+      ts: now - i * 45000 // spaced ~45s apart, newest first
+    });
+  }
+  return items;
+}
+
+const feedPreviewBtn = document.getElementById('feedPreviewBtn');
+feedPreviewBtn.addEventListener('click', () => {
+  previewOn = !previewOn;
+  feedPreviewBtn.classList.toggle('active', previewOn);
+  feedPreviewBtn.textContent = previewOn ? 'Back to real feed' : 'Preview with 40 sample thoughts';
+  if (previewOn) {
+    submissionsList.innerHTML = '';
+    generateMockResponses(40).forEach(item => submissionsList.appendChild(renderSubmission(item)));
+  } else {
+    renderRealFeedFromCache(); // instant, no refetch — whatever came in while previewing is already cached
+  }
+});
+
+// Poll for new submissions from other partners, so the feed feels like a live discussion
+// rather than something you only see after refreshing the page. Skipped while the sample
+// preview is showing, so it doesn't get silently overwritten by the real (empty) feed.
+if (STORAGE_AVAILABLE) {
+  setInterval(() => { if (!previewOn) loadSubmissions(); }, 8000);
+}
+
+submitBtn.addEventListener('click', async () => {
+  const text = submissionInput.value.trim();
+  if (!text && !pendingPhoto) return;
+  if (!STORAGE_AVAILABLE) { alert('Live saving isn\'t available outside Claude\'s preview environment — this needs a real backend (e.g. Vercel KV/Blob) once deployed.'); return; }
+  const name = partnerNameInput ? partnerNameInput.value.trim() : '';
+  const key = 'gls-case-submission:' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+  try {
+    await window.storage.set(key, JSON.stringify({ name: name || null, text: text || null, photo: pendingPhoto, ts: Date.now() }), true);
+    submissionInput.value = ''; pendingPhoto = null; photoPreview.classList.remove('show'); photoPreview.src = '';
+    await loadSubmissions();
+    burstConfetti(submitBtn);
+  } catch (e) { alert('Could not save your response in this preview environment.'); }
+});
+
+/* Archive gallery */
+const archiveToggle = document.getElementById('archiveToggle');
+const archiveGallery = document.getElementById('archiveGallery');
+let archiveLoaded = false;
+archiveToggle.addEventListener('click', async () => {
+  const showing = archiveGallery.style.display !== 'none';
+  if (showing) { archiveGallery.style.display = 'none'; archiveToggle.textContent = "Show every thought from the discussion"; return; }
+  archiveGallery.style.display = 'grid'; archiveToggle.textContent = 'Hide';
+  if (archiveLoaded) return; archiveLoaded = true;
+  if (!STORAGE_AVAILABLE) { archiveGallery.innerHTML = '<p class="muted">Live saving isn\'t available outside Claude\'s preview — this needs a real backend once deployed.</p>'; return; }
+  try {
+    const result = await window.storage.list('gls-case-submission:', true);
+    if (!result || !result.keys || result.keys.length === 0) { archiveGallery.innerHTML = '<p class="muted">Nothing submitted yet.</p>'; return; }
+    const items = [];
+    for (const key of result.keys) { try { const entry = await window.storage.get(key, true); if (entry && entry.value) items.push(JSON.parse(entry.value)); } catch (e) {} }
+    items.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    archiveGallery.innerHTML = '';
+    items.forEach(item => {
+      const card = document.createElement('div'); card.className = 'archive-item';
+      const nameEl = document.createElement('div'); nameEl.style.cssText = 'font-weight:800; font-size:13px; color:var(--pink); margin-bottom:4px;';
+      nameEl.textContent = (item.name && item.name.trim()) ? item.name.trim() : 'Anonymous partner';
+      card.appendChild(nameEl);
+      if (item.photo) { const img = document.createElement('img'); img.src = item.photo; card.appendChild(img); }
+      if (item.text) { const p = document.createElement('p'); p.textContent = item.text; card.appendChild(p); }
+      archiveGallery.appendChild(card);
+    });
+  } catch (e) { archiveGallery.innerHTML = '<p class="muted">Could not load the archive right now.</p>'; }
+});
+
+/* Session recap — synthesizes the live discussion into themes, rather than repeating the raw feed */
+const recapBtn = document.getElementById('recapBtn');
+const recapOutput = document.getElementById('recapOutput');
+recapBtn.addEventListener('click', async () => {
+  recapBtn.disabled = true;
+  recapBtn.textContent = 'Generating…';
+  recapOutput.innerHTML = '<p class="muted small" style="margin:0;">Reading through the discussion…</p>';
+  try {
+    if (!STORAGE_AVAILABLE) throw new Error('storage unavailable');
+    const result = await window.storage.list('gls-case-submission:', true);
+    const texts = [];
+    if (result && result.keys && result.keys.length > 0) {
+      for (const key of result.keys) {
+        try { const entry = await window.storage.get(key, true); if (entry && entry.value) { const item = JSON.parse(entry.value); if (item.text) texts.push(item.text); } } catch (e) {}
+      }
+    }
+    if (texts.length === 0) {
+      recapOutput.innerHTML = '<p class="muted small" style="margin:0;">No thoughts have been shared in the discussion yet — nothing to summarize.</p>';
+      recapBtn.disabled = false; recapBtn.textContent = 'Generate recap';
+      return;
+    }
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 400,
+        system: 'You summarize a live partner discussion at a Bain consumer products event. You will be given raw thoughts partners posted during a case-study discussion. Synthesize the 3-5 key themes or takeaways as a short bulleted list ("- " per line), in a warm, consultative tone. Do not just repeat every individual comment — genuinely synthesize patterns across them. Keep it under 150 words.',
+        messages: [{ role: 'user', content: `Here are the raw thoughts from the room:\n\n${texts.map((t, i) => `${i + 1}. ${t}`).join('\n')}` }]
+      })
+    });
+    const data = await response.json();
+    const textBlock = (data.content || []).find(b => b.type === 'text');
+    const recap = textBlock ? textBlock.text : "Couldn't generate a recap right now.";
+    recapOutput.innerHTML = renderChatMarkdown(recap);
+  } catch (e) {
+    recapOutput.innerHTML = '<p class="muted small" style="margin:0;">Couldn\'t reach the recap service — check that /api/chat and the ANTHROPIC_API_KEY environment variable are set up on the server.</p>';
+  }
+  recapBtn.disabled = false;
+  recapBtn.textContent = 'Regenerate';
+});
+
+/* Closing thoughts — a separate, personal wrap-up moment, distinct from the case-study discussion */
+const closingName = document.getElementById('closingName');
+const closingInput = document.getElementById('closingInput');
+const closingSubmitBtn = document.getElementById('closingSubmitBtn');
+const closingWall = document.getElementById('closingWall');
+
+function initialsFor(name) {
+  const str = (name && name.trim()) ? name.trim() : 'Anonymous';
+  const parts = str.split(/\s+/);
+  return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+}
+function avatarGradientFor(accent) {
+  const map = { red: 'linear-gradient(135deg, var(--red), var(--orange))', pink: 'linear-gradient(135deg, var(--pink), var(--violet))',
+    violet: 'linear-gradient(135deg, var(--violet), var(--blue))', gold: 'linear-gradient(135deg, var(--gold), var(--orange))' };
+  return map[accent] || map.pink;
+}
+
+function renderClosingItem(item) {
+  const wrap = document.createElement('div'); wrap.className = 'closing-item';
+  const accent = accentForName(item.name);
+  const avatar = document.createElement('div'); avatar.className = 'closing-item-avatar';
+  avatar.style.background = avatarGradientFor(accent);
+  avatar.textContent = initialsFor(item.name);
+  wrap.appendChild(avatar);
+
+  const body = document.createElement('div'); body.className = 'closing-item-body';
+  const who = document.createElement('div');
+  const name = document.createElement('span'); name.className = 'who-name';
+  name.style.color = `var(--${accent})`;
+  name.textContent = (item.name && item.name.trim()) ? item.name.trim() : 'Anonymous partner';
+  const time = document.createElement('span'); time.className = 'who-time';
+  time.textContent = timeAgo(item.ts || Date.now());
+  who.appendChild(name); who.appendChild(time);
+  body.appendChild(who);
+  const p = document.createElement('p'); p.textContent = item.text; body.appendChild(p);
+  wrap.appendChild(body);
+  return wrap;
+}
+
+async function loadClosingThoughts() {
+  if (!STORAGE_AVAILABLE) { closingWall.innerHTML = '<p class="empty-dark">Live saving isn\'t available outside Claude\'s preview.</p>'; return; }
+  try {
+    const result = await window.storage.list('gls-closing-thought:', true);
+    if (!result || !result.keys || result.keys.length === 0) { closingWall.innerHTML = '<p class="empty-dark">No closing thoughts yet.</p>'; return; }
+    const items = [];
+    for (const key of result.keys) { try { const entry = await window.storage.get(key, true); if (entry && entry.value) items.push(JSON.parse(entry.value)); } catch (e) {} }
+    items.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    closingWall.innerHTML = '';
+    items.forEach(item => closingWall.appendChild(renderClosingItem(item)));
+  } catch (e) { closingWall.innerHTML = '<p class="empty-dark">Could not load closing thoughts right now.</p>'; }
+}
+loadClosingThoughts();
+
+closingSubmitBtn.addEventListener('click', async () => {
+  const text = closingInput.value.trim();
+  if (!text) return;
+  if (!STORAGE_AVAILABLE) { alert('Live saving isn\'t available outside Claude\'s preview environment — this needs a real backend once deployed.'); return; }
+  const name = closingName.value.trim();
+  const key = 'gls-closing-thought:' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+  try {
+    await window.storage.set(key, JSON.stringify({ name: name || null, text, ts: Date.now() }), true);
+    closingInput.value = '';
+    await loadClosingThoughts();
+    burstConfetti(closingSubmitBtn);
+  } catch (e) { alert('Could not save your thought in this preview environment.'); }
+});
+
+/* ===== Ask about GLS — chat widget powered by the Claude API ===== */
+const chatFab = document.getElementById('chatFab');
+const chatPanel = document.getElementById('chatPanel');
+const chatClose = document.getElementById('chatClose');
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+const chatSend = document.getElementById('chatSend');
+
+const GLS_CONTEXT = `
+You are a helpful assistant embedded in the GLS (CP Industry Session) resource page. Answer questions ONLY using the information below.
+If something isn't covered here, say you don't have that detail yet and suggest checking with the organizers — don't make anything up.
+Keep answers concise and direct. For simple questions (timing, venue), 1-3 sentences is enough. For anything with multiple points (like the six strategic questions, or the five provocations), use a numbered or bulleted list — one line per point, starting each line with "1. " or "- " — rather than one long paragraph, and use **bold** sparingly on key terms. If asked to summarize a resource, use the summary provided below — you can condense it further or expand slightly, but stay grounded in it.
+
+EVENT: CP Industry Session (part of GLS)
+DATE: Wednesday, 28 October
+TIME: 10:00 AM – 1:00 PM
+VENUE: Vienna, Austria
+
+AGENDA:
+1. 10:00–10:45 AM — Value creation in CP (where the growth is actually coming from)
+2. 10:45 AM–12:00 PM — Retail reimagined (what's changing in how CP companies reach consumers)
+   BREAK 12:00–12:10 PM
+3. 12:10–12:55 PM — Business transformation through AI in CP (how AI is reshaping the work itself)
+4. 12:55–1:00 PM — Closing & Awards
+
+MUST-READ RESOURCES (three topics, matching the agenda):
+
+1. VALUE CREATION IN CP
+   - "The Future of Consumer Products" (Iris G1LWAV, by Nicolas Willemot, Charlotte Apps, and Sarah Yates). This is Bain's executive deck on the state of the CP sector. Key points:
+     - Framing: consumer spend keeps growing (~$60T market) but top CPGs aren't capturing their share of it — value creation has been eroding and total shareholder return has fallen below historic levels and behind other sectors.
+     - "Five (plus one) provocations for CPGs":
+       1. Purpose lost, relevance gone — insurgent brands are capturing a large share of category growth by delivering clearer consumer value, while many large portfolios carry "zombie" brands losing relevance.
+       2. Zombie brands black-out — many consumers now research and compare products using GenAI, accelerating the shift away from brands that haven't kept up.
+       3. Triple net to triple threat retail — the digital era has tilted power toward retailers, who increasingly expect a large share of future profit to come from "beyond trade" businesses (retail media, data, etc.).
+       4. Consumer tailwinds, portfolio drag — shifts like GLP-1 adoption and ultra-processed-food concerns put a meaningful share of Top CPG food & beverage growth at risk.
+       5. Digital dreams, delayed dividends — CPG tech budgets have roughly doubled since 2020 without a matching improvement in margins.
+       + Mounting volatility and compounded unpredictability tie all five together.
+     - Two supporting stats: companies that "reimagine retail" could unlock meaningfully more value than peers over the next five years; over $100 billion in US CP-retail profit pool is at stake for whoever best captures technology's advantages (Walmart, Amazon, and JPMorgan are cited as examples of non-CPG players already leveraging AI at scale).
+   - "The Road Forward to Value Creation in Consumer Products" (Bain.com, same three authors, published June 2026). Summary: the piece lays out six strategic questions for leaders:
+     1. Brand portfolio triage — most portfolios have "hero," "twilight," and "zombie" brands; winners actively reinvest in heroes and twilight brands while divesting zombies rather than trying to maintain everything.
+     2. Capability focus — going from "better to best" in the one or two capabilities that matter most in a category can unlock several points of sales growth; cost leadership alone isn't enough against private label.
+     3. Retail collaboration — companies that proactively "reimagine retail" are projected to open up a meaningful revenue gap versus those that don't, by capturing new channels and defending trade economics.
+     4. New growth frontiers — bold M&A and localized operating models (local decision rights, local talent) are needed to reach underexposed high-growth segments and emerging markets.
+     5. AI-enabled "scale insurgency" — the companies seeing real payoff treat AI as a business transformation tied to a clear value pool, not just a technology initiative.
+     6. Adaptability — building organizational muscle to sense shifting conditions and respond decisively, since fewer than half of CEOs surveyed feel ready to adapt.
+   - A third piece (value creation IP from Sarah) is still pending and not yet available.
+
+2. RETAIL REIMAGINED
+   - The dedicated piece (from Fatima) is genuinely still in progress internally as of this writing — say so plainly if asked, don't imply it's ready.
+   - That said, general background on this theme exists in "The Future of Consumer Products" (the same deck summarized above): the sector talks about a shift from "triple net to triple threat" retail — retailers have gained power through data, "beyond trade" businesses (like retail media), and private brands. Agentic commerce (AI agents completing purchases on a shopper's behalf) is projected to handle a meaningful share of ecommerce by 2030. Companies that proactively "reimagine retail" — building new capabilities in emerging channels and defending trade economics — are the ones projected to pull ahead. A cited example: Coca-Cola's AI-driven "Fuelight360" tool continuously reallocates marketing and trade spend in real time rather than relying on static planning cycles.
+   - Agentic commerce / dComm perspectives are also still being finalized — say so if asked for specifics beyond the above.
+
+3. AI TRANSFORMATION IN CP
+   - "AI Transformation in Consumer Products — Selling Support" (Iris IDR739) — this assistant could not confirm access to this exact CP-specific file. However, Bain's broader "AI Transformation Selling Support" materials (which this deck is built from) lay out a consistent framework worth sharing if asked:
+     - The core message: companies that treat AI as a business-led transformation (not a technology deployment) see the biggest returns. A successful AI transformation has 9 key elements, including a clear Domains focus (the priority areas driving value), a bold Ambition/narrative, and an "AI Acceleration Office" that handles resourcing, orchestration, standards, and governance.
+     - It's grounded in real multi-year client programs across industries — e.g. a global CPG's end-to-end tech and AI-led business transformation with a $1.5B impact, and a European retailer's AI-driven personalization work.
+     - If asked for CP-specific selling-support detail beyond this general framework, be honest that you don't have the exact tailored deck and suggest opening the Iris link directly.
+   - "AI Tools in CP" (ai-tools-in-cp.vercel.app) — an internal gallery of 15 AI tools used across CP casework, organized into 4 domains: Brand & Marketing (e.g. tools for demand generation and marketing ROI), Commercial Excellence (revenue growth, routes to market, key accounts — the largest group, 7 tools), Innovation (AI-powered new product development and pipeline acceleration), and Performance Improvement (procurement, finance, and legal ops). Several tools have live demos or short videos attached.
+
+Note: for anything beyond what's summarized above, be honest that you don't have that level of detail and suggest opening the Iris link directly.
+
+LIVE SESSION: There is a live case-study discussion that only unlocks on the day of the event (28 Oct) — it's a bit of a surprise, so don't reveal more than that it exists. It's an open discussion, not a question-and-answer format: partners share their thoughts and reactions live, visible to everyone in the room on this page, not a formal Q&A.
+
+OTHER RESOURCES: A page section reserved for photos, notes, and the case-study discussion, populated after the event.
+
+The reading list has a personal checklist and notes feature so partners can track what they've read and jot down thoughts before the day.
+`.trim();
+
+let chatHistory = [];
+let chatOpen = false;
+
+function toggleChat(open) {
+  chatOpen = open !== undefined ? open : !chatOpen;
+  chatPanel.classList.toggle('open', chatOpen);
+  chatFab.classList.toggle('open', chatOpen);
+  if (chatOpen) chatInput.focus();
+}
+chatFab.addEventListener('click', () => toggleChat());
+chatClose.addEventListener('click', () => toggleChat(false));
+
+/* Lightweight, safe markdown renderer for bot replies — handles bold, numbered
+   lists, bullet lists, and paragraph breaks without any HTML injection risk
+   (all raw text is escaped before any tags are added). */
+function renderChatMarkdown(raw) {
+  let text = raw
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+  const lines = text.split('\n');
+  const out = [];
+  let listType = null;
+  let items = [];
+
+  function flush() {
+    if (listType) {
+      out.push(`<${listType}>` + items.map(i => `<li>${i}</li>`).join('') + `</${listType}>`);
+      listType = null; items = [];
+    }
+  }
+
+  lines.forEach(line => {
+    const t = line.trim();
+    const num = t.match(/^(\d+)[.)]\s+(.*)/);
+    const bullet = t.match(/^[-*•]\s+(.*)/);
+    if (num) {
+      if (listType !== 'ol') { flush(); listType = 'ol'; }
+      items.push(num[2]);
+    } else if (bullet) {
+      if (listType !== 'ul') { flush(); listType = 'ul'; }
+      items.push(bullet[1]);
+    } else {
+      flush();
+      if (t !== '') out.push(`<p>${t}</p>`);
+    }
+  });
+  flush();
+  return out.join('');
+}
+
+function addChatMessage(text, role) {
+  const el = document.createElement('div');
+  el.className = 'chat-msg ' + (role === 'user' ? 'chat-msg-user' : 'chat-msg-bot');
+  if (role === 'user') {
+    el.textContent = text;
+  } else {
+    el.innerHTML = renderChatMarkdown(text);
+  }
+  chatMessages.appendChild(el);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return el;
+}
+
+function addTypingIndicator() {
+  const el = document.createElement('div');
+  el.className = 'chat-msg chat-msg-bot chat-msg-typing';
+  el.innerHTML = '<span></span><span></span><span></span>';
+  chatMessages.appendChild(el);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return el;
+}
+
+/* Offline fallback knowledge base — built from the same researched content above.
+   Used automatically if the live Claude API call isn't reachable (e.g. once deployed
+   without a backend proxy), so the chat still gives real, correct answers rather than
+   nothing at all. Simple keyword-overlap matching, no network call required. */
+const FAQ_KNOWLEDGE = [
+  { keywords: ['agenda', 'schedule', 'time', 'timing', 'when', 'start', 'end', 'break'],
+    answer: "The CP Industry Session runs 10:00 AM–1:00 PM on Wednesday, 28 October in Vienna. Agenda: 10:00–10:45 Value creation in CP, 10:45–12:00 Retail reimagined, a break from 12:00–12:10, 12:10–12:55 Business transformation through AI in CP, and 12:55–1:00 Closing & Awards." },
+  { keywords: ['venue', 'location', 'where', 'vienna', 'austria'],
+    answer: "It's in Vienna, Austria, on Wednesday, 28 October, 10:00 AM–1:00 PM." },
+  { keywords: ['date', 'day', 'october'],
+    answer: "The CP Industry Session is on Wednesday, 28 October, from 10:00 AM to 1:00 PM in Vienna." },
+  { keywords: ['value', 'creation', 'provocation', 'provocations'],
+    answer: "**Value creation in CP** — the sector's growth has slowed and shareholder returns have fallen behind. Bain's \"five (plus one) provocations\":\n1. Purpose lost, relevance gone — insurgents winning on clearer value\n2. Zombie brands black-out — GenAI reshaping how consumers research products\n3. Triple net to triple threat retail — retailers gaining power\n4. Consumer tailwinds, portfolio drag — GLP-1/UPF pressuring F&B growth\n5. Digital dreams, delayed dividends — tech spend up, margins flat\nTied together by mounting volatility. The companion piece turns this into six strategic questions: brand portfolio triage, capability focus, retail collaboration, new growth frontiers, treating AI as a business transformation, and adaptability." },
+  { keywords: ['retail', 'reimagined', 'reimagine'],
+    answer: "Retail reimagined: the dedicated piece is still in progress internally, so no final content yet. General background: retailers have gained power through data, retail media, and private label (\"triple net to triple threat\"), and agentic commerce (AI agents completing purchases) is expected to handle a meaningful share of ecommerce by 2030. Companies that proactively reimagine retail are projected to pull ahead of peers." },
+  { keywords: ['ai', 'transformation', 'artificial', 'intelligence'],
+    answer: "Business transformation through AI in CP: the throughline across Bain's materials is that AI pays off when treated as a business-led transformation (tied to a clear value pool and business case) rather than a technology deployment. There's also an internal gallery, \"AI Tools in CP,\" with 15 tools across Brand & Marketing, Commercial Excellence, Innovation, and Performance Improvement, several with live demos." },
+  { keywords: ['tools', 'vercel', 'gallery', 'demo'],
+    answer: "\"AI Tools in CP\" is an internal gallery of 15 AI tools across 4 domains: Brand & Marketing, Commercial Excellence (the largest group, 7 tools), Innovation, and Performance Improvement. Several tools have live demos or short videos." },
+  { keywords: ['live', 'surprise', 'case', 'study'],
+    answer: "There's a live case-study discussion that unlocks on the day of the event (28 Oct) — it's meant to be a bit of a surprise, so details aren't shared in advance. It's an open discussion, not Q&A: partners share their thoughts live, visible to everyone in the room." },
+  { keywords: ['checklist', 'progress', 'notes', 'track', 'read'],
+    answer: "The reading list has a personal checklist so you can track what you've read, plus a private notes box to jot down thoughts before the day — both save automatically to your browser." },
+  { keywords: ['other', 'resources', 'archive', 'photo', 'photos'],
+    answer: "The \"Other Resources\" section is reserved for photos, notes, and the case-study discussion, populated after the event wraps up." },
+  { keywords: ['awards', 'closing', 'award'],
+    answer: "Closing & Awards runs 12:55–1:00 PM, right after the AI transformation session, recognizing the year's standout work." },
+];
+
+function tryLocalFallback(question) {
+  const q = question.toLowerCase();
+  let best = null, bestScore = 0;
+  FAQ_KNOWLEDGE.forEach(entry => {
+    const score = entry.keywords.filter(k => q.includes(k)).length;
+    if (score > bestScore) { bestScore = score; best = entry; }
+  });
+  return bestScore > 0 ? best.answer : null;
+}
+
+async function sendChatMessage() {
+  const text = chatInput.value.trim();
+  if (!text) return;
+  chatInput.value = '';
+  addChatMessage(text, 'user');
+  chatHistory.push({ role: 'user', content: text });
+  const typingEl = addTypingIndicator();
+
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 650,
+        system: GLS_CONTEXT,
+        messages: chatHistory
+      })
+    });
+    const data = await response.json();
+    const textBlock = (data.content || []).find(b => b.type === 'text');
+    const reply = textBlock ? textBlock.text : "Sorry, I couldn't find an answer to that.";
+    typingEl.remove();
+    addChatMessage(reply, 'bot');
+    chatHistory.push({ role: 'assistant', content: reply });
+  } catch (e) {
+    typingEl.remove();
+    const fallback = tryLocalFallback(text);
+    if (fallback) {
+      addChatMessage(fallback, 'bot');
+      addChatMessage("(That answer came from a built-in offline summary, since a live connection isn't available here — accurate, just not as flexible as a live conversation.)", 'bot');
+      chatHistory.push({ role: 'assistant', content: fallback });
+    } else {
+      addChatMessage("I don't have a built-in answer for that specific question, and a live connection to Claude isn't available here. Once this page is deployed with a real backend, it'll be able to answer anything, not just the topics already summarized on this page.", 'bot');
+    }
+  }
+}
+
+chatSend.addEventListener('click', sendChatMessage);
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+});
+</script>
+
+</body>
+</html>
